@@ -1,0 +1,27 @@
+{
+  "name": "web3p",
+  "version": "1.0.0",
+  "description": "Privacy extension for Web3",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oasislabs/web3p.js.git"
+  },
+  "keywords": [
+    "web3",
+    "web3p",
+    "ekiden"
+  ],
+  "author": "Oasis Labs Inc. <info@oasislabs.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/oasislabs/web3p.js/issues"
+  },
+  "homepage": "https://github.com/oasislabs/web3p.js#readme",
+  "devDependencies": {
+    "tweetnacl": "^1.0.0"
+  }
+}
