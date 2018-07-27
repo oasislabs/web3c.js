@@ -26,7 +26,10 @@
   "devDependencies": {
     "eslint": "^5.2.0",
     "mocha": "^5.2.0",
-    "tweetnacl": "^1.0.0"
+    "mocha-webpack": "^1.1.0",
+    "tweetnacl": "^1.0.0",
+    "webpack": "^4.16.2",
+    "webpack-command": "^0.4.1"
   },
   "eslintConfig": {
     "parserOptions": {
@@ -39,15 +42,21 @@
     },
     "extends": "eslint:recommended",
     "rules": {
-        "indent": ["error", 2],
-        "linebreak-style": [
-            "error",
-            "unix"
-        ],
-        "quotes": [
-            "error",
-            "single"
-        ]
+      "indent": [
+        "error",
+        2
+      ],
+      "linebreak-style": [
+        "error",
+        "unix"
+      ],
+      "quotes": [
+        "error",
+        "single"
+      ]
     }
+  },
+  "dependencies": {
+    "web3": "^1.0.0-beta.34"
   }
 }
