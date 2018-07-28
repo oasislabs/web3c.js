@@ -1,6 +1,6 @@
 const assert = require('assert');
 const nacl = require('tweetnacl');
-const mraeBox = require('../crypto/mrae_box_node');
+const mraeBox = require('../crypto/node/mrae_box');
 
 const nonceLen = 16;
 const aadLen = 23;

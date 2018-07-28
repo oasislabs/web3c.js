@@ -2,7 +2,8 @@
   "name": "web3p",
   "version": "1.0.0",
   "description": "Privacy extension for Web3",
-  "main": "index.js",
+  "main": "index.node.js",
+  "module": "index.browser.js",
   "scripts": {
     "build": "gulp",
     "test": "mocha && eslint *.js crypto/",
@@ -24,9 +25,10 @@
   },
   "homepage": "https://github.com/oasislabs/web3p.js#readme",
   "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-loader": "^7.1.5",
     "eslint": "^5.2.0",
     "mocha": "^5.2.0",
-    "mocha-webpack": "^1.1.0",
     "tweetnacl": "^1.0.0",
     "webpack": "^4.16.2",
     "webpack-command": "^0.4.1"

@@ -1,7 +1,7 @@
 /* globals TextEncoder */
 const nacl = require('tweetnacl');
-const subtle = require('subtle');
-const sivCtr = require('./siv_ctr_subtle');
+const subtle = window.crypto.subtle;
+const sivCtr = require('./siv_ctr');
 
 var boxKDFTweak = new TextEncoder('utf-8').encode('MRAE_Box_SIV_CTR-AES128_HMAC-SHA256-128');
 

@@ -1,5 +1,5 @@
 const assert = require('assert');
-const sivCtr = require('../crypto/siv_ctr_node');
+const sivCtr = require('../crypto/node/siv_ctr');
 
 const keyLen = 48;
 const nonceLen = 16;
@@ -51,10 +51,12 @@ describe('SivCtr', function() {
         Msg.slice(0, length),
         Aad.slice(0, length)
       );
+      ciphertext = new Buffer(ciphertext);
       let answerC = new Buffer(answer.Ciphertext, 'base64');
       let answerT = new Buffer(answer.Tag, 'base64');
       assert.equal(ciphertext.length, length + sivCtr.TagSize);
-      assert.deepEqual(ciphertext, Buffer.concat([answerC, answerT]), "test vector of length " + length);
+      assert.deepEqual(ciphertext.slice(0, answerC.length), answerC, "test vector of length " + length);
+      assert.deepEqual(ciphertext.slice(answerC.length, ciphertext.length), answerT, "Test vector tag of length" + length)
     }));
   });
 });

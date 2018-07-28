@@ -1,3 +1,2 @@
 // Web3p
-
-// TODO: entrypoints.
+const MraeBox = require('./crypto/node/mrae_box');

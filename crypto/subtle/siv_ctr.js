@@ -1,7 +1,25 @@
 // Browser based Siv_Ctr implementation based on subtle crypto.
-var subtle = require('subtle');
-
+const subtle = window.crypto.subtle;
 const TagSize = 16;
+
+var merge = function (a, b) {
+  var out = new Uint8Array(a.byteLength + b.byteLength);
+  out.set(a);
+  out.set(b, a.byteLength);
+  return out;
+};
+
+var equals = function (a, b) {
+  if (a.byteLength != b.byteLength) {
+    return false;
+  }
+  for (var i = 0; i < a.byteLength; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
 
 var Encrypt = async function (Key, Nonce, Plaintext, AdditionalData) {
   let MACKey = await subtle.importKey(
@@ -22,22 +40,23 @@ var Encrypt = async function (Key, Nonce, Plaintext, AdditionalData) {
   // TODO: enforce big endian
   let AdditionalDataLength = new Uint32Array([AdditionalData.byteLength]);
   let PlaintextLength = new Uint32Array([Plaintext.byteLength]);
-  let SivData = new Uint8Array([Nonce, AdditionalDataLength, PlaintextLength, AdditionalData, Plaintext]);
+  let SivData = merge(merge(merge(Nonce, AdditionalDataLength), merge(PlaintextLength, AdditionalData)), Plaintext);
   let Siv = await subtle.sign(
     {name: 'HMAC'},
     MACKey,
     SivData
   );
+
   let Cyphertext = await subtle.encrypt(
     {
       name: 'AES-CTR',
-      counter: Siv,
+      counter: new Uint8Array(Siv).slice(0, TagSize),
       length: 128
     },
     EncKey,
     Plaintext
   );
-  return new Uint8Array([new Uint8Array(Cyphertext), new Uint8Array(Siv)]);
+  return merge(new Uint8Array(Cyphertext), new Uint8Array(Siv).slice(0, TagSize));
 };
 
 var Decrypt = async function (Key, Nonce, Ciphertext, AdditionalData) {
@@ -71,18 +90,18 @@ var Decrypt = async function (Key, Nonce, Ciphertext, AdditionalData) {
 
   let AdditionalDataLength = new Uint32Array([AdditionalData.byteLength]);
   let PlaintextLength = new Uint32Array([Plaintext.byteLength]);
-  let SivData = new Uint8Array([Nonce, AdditionalDataLength, PlaintextLength, AdditionalData, Plaintext]);
+  let SivData = merge(merge(merge(Nonce, AdditionalDataLength), merge(PlaintextLength, AdditionalData)), new Uint8Array(Plaintext));
   let Siv = await subtle.sign(
     {name: 'HMAC'},
     MACKey,
     SivData
   );
 
-  if (!Tag.equals(Siv)) {
+  if (!equals(Tag, new Uint8Array(Siv.slice(0, TagSize)))) {
     throw new Error('Incorrect Signature');
   }
 
-  return Plaintext;
+  return new Uint8Array(Plaintext);
 };
 
 module.exports = {

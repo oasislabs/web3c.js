@@ -1,6 +1,6 @@
 const nacl = require('tweetnacl');
 const crypto = require('crypto');
-const sivCtr = require('./siv_ctr_node');
+const sivCtr = require('./siv_ctr');
 
 const boxKDFTweak_str = 'MRAE_Box_SIV_CTR-AES128_HMAC-SHA256-128';
 var boxKDFTweak = new Uint8Array(boxKDFTweak_str.length);
