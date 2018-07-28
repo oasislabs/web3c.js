@@ -37,10 +37,11 @@ var Encrypt = async function (Key, Nonce, Plaintext, AdditionalData) {
     false,
     ['encrypt']
   );
-  // TODO: enforce big endian
-  let AdditionalDataLength = new Uint32Array([AdditionalData.byteLength]);
-  let PlaintextLength = new Uint32Array([Plaintext.byteLength]);
-  let SivData = merge(merge(merge(Nonce, AdditionalDataLength), merge(PlaintextLength, AdditionalData)), Plaintext);
+  let AdditionalDataLength = new ArrayBuffer(4);
+  new DataView(AdditionalDataLength).setUint32(0, AdditionalData.byteLength, false);
+  let PlaintextLength = new ArrayBuffer(4);
+  new DataView(PlaintextLength).setUint32(0, Plaintext.byteLength, false);
+  let SivData = merge(merge(merge(Nonce, new Uint8Array(AdditionalDataLength)), merge(new Uint8Array(PlaintextLength), AdditionalData)), Plaintext);
   let Siv = await subtle.sign(
     {name: 'HMAC'},
     MACKey,
@@ -88,9 +89,11 @@ var Decrypt = async function (Key, Nonce, Ciphertext, AdditionalData) {
     Ciphertext.slice(0, CiphertextLength - TagSize)
   );
 
-  let AdditionalDataLength = new Uint32Array([AdditionalData.byteLength]);
-  let PlaintextLength = new Uint32Array([Plaintext.byteLength]);
-  let SivData = merge(merge(merge(Nonce, AdditionalDataLength), merge(PlaintextLength, AdditionalData)), new Uint8Array(Plaintext));
+  let AdditionalDataLength = new ArrayBuffer(4);
+  new DataView(AdditionalDataLength).setUint32(0, AdditionalData.byteLength, false);
+  let PlaintextLength = new ArrayBuffer(4);
+  new DataView(PlaintextLength).setUint32(0, Plaintext.byteLength, false);
+  let SivData = merge(merge(merge(Nonce, new Uint8Array(AdditionalDataLength)), merge(new Uint8Array(PlaintextLength), AdditionalData)), new Uint8Array(Plaintext));
   let Siv = await subtle.sign(
     {name: 'HMAC'},
     MACKey,
