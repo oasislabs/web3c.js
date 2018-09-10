@@ -1,5 +1,5 @@
-# web3p.js
-A Web3 extension for private transactions.
+# web3c.js
+A Web3 extension for confidential transactions.
 
 ## Installation / Usage
 

@@ -1,7 +1,7 @@
 {
-  "name": "web3p",
+  "name": "web3c",
   "version": "1.0.0",
-  "description": "Privacy extension for Web3",
+  "description": "Confidentiality extension for Web3",
   "main": "index.node.js",
   "module": "index.browser.js",
   "scripts": {
@@ -12,19 +12,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oasislabs/web3p.js.git"
+    "url": "git+https://github.com/oasislabs/web3c.js.git"
   },
   "keywords": [
     "web3",
-    "web3p",
+    "web3c",
     "ekiden"
   ],
   "author": "Oasis Labs Inc. <info@oasislabs.com>",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/oasislabs/web3p.js/issues"
+    "url": "https://github.com/oasislabs/web3c.js/issues"
   },
-  "homepage": "https://github.com/oasislabs/web3p.js#readme",
+  "homepage": "https://github.com/oasislabs/web3c.js#readme",
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.5",

@@ -8,7 +8,7 @@ module.exports = {
         test: /.*\.js$/,
         include: [
           path.resolve(__dirname, 'crypto'),
-          path.resolve(__dirname, 'web3p'),
+          path.resolve(__dirname, 'web3c'),
           path.resolve(__dirname, 'test')
         ],
         exclude: [
@@ -23,7 +23,7 @@ module.exports = {
     modules: [
       'node_modules',
       path.resolve(__dirname, 'crypto'),
-      path.resolve(__dirname, 'web3p')
+      path.resolve(__dirname, 'web3c')
     ],
     extensions: [ '.js' ],
     alias: {
@@ -33,7 +33,7 @@ module.exports = {
   },
   output: {
     path: __dirname + '/output',
-    filename: 'web3p.js'
+    filename: 'web3c.js'
   },
   devtool: 'source-map',
   target: 'web'
