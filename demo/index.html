@@ -1,0 +1,54 @@
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    <script src="../output/web3c.js"></script>
+    <script src="demo.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Web3.<i>Confidentiality</i></h1>
+    </header>
+    <section>
+      <h2>Interaction with confidential contracts</h2>
+      <code>(this comes last; the high-level interface hiding complexity)</code>
+    </section>
+    <section>
+      <h1>Under the hood</h1>
+      <section>
+        <h2>Establishing a secure channel</h2>
+        <p>
+        In the standard mental model of interaction with a smart contract, the
+        contract is identified by the address it is deployed on chain. A client
+        can validate that it is interacting with the expected contract by
+        checking what's deployed at that location, and making sure the code of
+        the contract meets expectations.
+        </p>
+        <p>
+        In confidential contracts, an additional step is needed - the client
+        must determine the public key with which to encrypt messages to the
+        contract. This key is dynamic - it may change over time - meaning that
+        a request for the current public key, and associated validation, is
+        nessicary at the beginning of each session.
+        </p>
+        <p>
+        The current encryption key for a confidential contract can be
+        retrieved by calling <code>eth_getPublicKey</code> for the contract
+        address.
+        </p>
+        <section id=getpublickey>
+          <h3>eth_getPublicKey</h3>
+          <form id=getpublickey_form>
+            <input type=text name=contract_address />
+            <input type=submit name=eth_getPublicKey value="get public key" />
+          </form>
+          <span id=getpublickey_result></span>
+        </section>
+      </section>
+      <section>
+        <h2>An encrypted call</h2>
+        <p>
+        </p>
+      </section>
+    </section>
+  </body>
+</html>
