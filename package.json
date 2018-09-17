@@ -5,7 +5,8 @@
   "main": "index.node.js",
   "module": "index.browser.js",
   "scripts": {
-    "build": "gulp",
+    "build": "webpack-command --entry ./index.js --output output/web3c.js",
+    "watch": "webpack-command --watch --entry ./index.js --output output/web3c.js",
     "test": "mocha && eslint *.js crypto/",
     "test:browser": "mocha init output/ && webpack-command --entry ./tests.js --output output/tests.js",
     "lint": "eslint *.js crypto/"
