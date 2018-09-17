@@ -10,6 +10,7 @@ var onpublickeyform_submit = function (ev) {
   var addr = getpublickeyform.contract_address.value;
 
   // Make call.
+  web3.eth_getPublicKey()
 
   ev.preventDefault();
   return false;
