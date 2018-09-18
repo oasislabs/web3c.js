@@ -1,13 +1,27 @@
-const Contract = require('web3-eth-contract');
+let PrivateContract = function (web3) {
+  this._requestManager = web3._requestManager;
 
-var executePrivateMethod = function executePrivateMethod() {
-  
+    let self = this;
+
+    methods(web3._extend).forEach(function (method) {
+        method.attachToObject(self);
+    });
 };
 
-var PrivateContract = function PrivateContract(jsonInterface, address, options) {
-  var contract = new Contract(jsonInterface, address, options);
-  contract._executeMethod = executePrivateMethod;
-  return contract;
+let getPublicKeyOutputFormatter = function getPublicKeyOutputFormatter(t) {
+  return t;
+};
+
+PrivateContract.methods = function (ctx) {
+  return [
+    new ctx.Method({
+      name: 'getPublicKey',
+      call: 'con_getPublicKey',
+      params: 1,
+      inputFormatter: [ctx.formatters.inputAddressFormatter],
+      outputFormatter: getPublicKeyOutputFormatter
+    })
+  ];
 };
 
 module.exports = PrivateContract;

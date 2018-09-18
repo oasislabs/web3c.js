@@ -1,6 +1,12 @@
+var PrivateContract = require('./contract');
+
 function makeWeb3c (web3) {
   return function (provider) {
     var obj = new web3(provider);
+    obj._extend({
+      property: 'confidential',
+      methods: PrivateContract.methods(obj._extend)
+    });
     return obj;
   }
 }
