@@ -1,3 +1,4 @@
+/* globals Web3 */
 var PrivateContract = require('./contract');
 
 function makeWeb3c (web3) {
@@ -13,10 +14,10 @@ function makeWeb3c (web3) {
 
 if (typeof Web3 === 'undefined') {
   require.ensure(['web3'], function (req) {
-    var web3 = require('web3');
+    var web3 = req('web3');
     module.exports = makeWeb3c(web3);
   }, function (err) {
-    console.error("Failed to find Web3.");
+    throw err;
   }, 'web3');
 } else {
   module.exports = makeWeb3c(Web3);

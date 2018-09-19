@@ -7,9 +7,9 @@
   "scripts": {
     "build": "webpack-command --entry ./index.js --output output/web3c.js",
     "watch": "webpack-command --watch --entry ./index.js --output output/web3c.js",
-    "test": "mocha && eslint *.js crypto/",
+    "test": "mocha && npm run-script lint",
     "test:browser": "mocha init output/ && webpack-command --entry ./tests.js --output output/tests.js",
-    "lint": "eslint *.js crypto/"
+    "lint": "eslint *.js web3c/ crypto/"
   },
   "repository": {
     "type": "git",

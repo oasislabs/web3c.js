@@ -1,11 +1,11 @@
 let PrivateContract = function (web3) {
   this._requestManager = web3._requestManager;
 
-    let self = this;
+  let self = this;
 
-    methods(web3._extend).forEach(function (method) {
-        method.attachToObject(self);
-    });
+  self.methods(web3._extend).forEach(function (method) {
+    method.attachToObject(self);
+  });
 };
 
 let getPublicKeyOutputFormatter = function getPublicKeyOutputFormatter(t) {
