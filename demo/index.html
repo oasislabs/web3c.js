@@ -1,8 +1,9 @@
 <html>
   <head>
-    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
-    <script src="../output/web3c.js"></script>
-    <script src="demo.js"></script>
+    <link rel='stylesheet' type='text/css' href='demo.css' />
+    <script src='https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js'></script>
+    <script src='../output/web3c.js'></script>
+    <script src='demo.js'></script>
   </head>
   <body>
     <header>
@@ -38,13 +39,13 @@
         retrieved by calling <code>eth_getPublicKey</code> for the contract
         address.
         </p>
-        <section id=getpublickey>
+        <section id='getpublickey'>
           <h3>eth_getPublicKey</h3>
-          <form id=getpublickey_form>
-            <input type=text name=contract_address />
-            <input type=submit name=eth_getPublicKey value="get public key" />
+          <form id='getpublickey_form'>
+            <input type='text' name='contract_address' />
+            <input type='submit' name='eth_getPublicKey' value='get public key' />
           </form>
-          <span id=getpublickey_result></span>
+          <span id='getpublickey_result'></span>
         </section>
       </section>
       <section>

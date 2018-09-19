@@ -30,7 +30,7 @@ var onpublickeyform_submit = function (ev) {
       console.log(resp);
     });
   } catch (e) {
-    console.error(e);
+    document.getElementById('getpublickey_result').innerHTML = e;
   }
 
   ev.preventDefault();
