@@ -36,11 +36,11 @@
         </p>
         <p>
         The current encryption key for a confidential contract can be
-        retrieved by calling <code>eth_getPublicKey</code> for the contract
+        retrieved by calling <code>confidential_getPublicKey</code> for the contract
         address.
         </p>
         <section id='getpublickey'>
-          <h3>eth_getPublicKey</h3>
+          <h3>confidential_getPublicKey</h3>
           <form id='getpublickey_form'>
             <input type='text' name='contract_address' />
             <input type='submit' name='getPublicKey' value='get public key' />
@@ -51,7 +51,26 @@
       <section>
         <h2>An encrypted call</h2>
         <p>
+        To make a confidential call, the public key above is used to encrypt the
+        data field of a standard call. This field contains a reference to which
+        method of the contract should be called, along with the arguments.
         </p>
+        <p>
+        The low-level <code>confidential_call_enc</code> and
+        <code>confidential_sendRawTransaction_enc</code> should be
+        provided with this encrypted state. It is up to the client to have
+        encrypted the call, and gotten a local wallet to sign the resulting
+        serialized data.
+        </p>
+        <section id='call_enc'>
+          <h3>confidential_call_enc</h3>
+          <form id='call_enc_form'>
+            <input type='text' name='contract_address' />
+            <input type='text' name='data' />
+            <input type='submit' name='call' value='call' />
+          </form>
+          <span id='call_enc_result'></span>
+        </section>
       </section>
     </section>
   </body>
