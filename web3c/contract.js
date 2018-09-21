@@ -1,4 +1,4 @@
-let PrivateContract = function (web3) {
+const PrivateContract = function (web3) {
   this._requestManager = web3._requestManager;
 
   let self = this;
@@ -8,18 +8,17 @@ let PrivateContract = function (web3) {
   });
 };
 
-let getPublicKeyOutputFormatter = function getPublicKeyOutputFormatter (t) {
+function getPublicKeyOutputFormatter (t) {
   return t;
-};
+}
 
-let sendRawTransactionOutputFormatter = function
-sendRawTransactionOutputFormatter (t) {
+function sendRawTransactionOutputFormatter (t) {
   return t;
-};
+}
 
-let callOutputFormatter = function callOutputFormatter (t) {
+function callOutputFormatter (t) {
   return t;
-};
+}
 
 PrivateContract.methods = function (ctx) {
   return [
@@ -43,7 +42,7 @@ PrivateContract.methods = function (ctx) {
       params: 2,
       inputFormatter: [ctx.formatters.inputCallFormatter, ctx.formatters.inputDefaultBlockNumberFormatter],
       outputFormatter: callOutputFormatter
-    })
+    }),
   ];
 };
 
