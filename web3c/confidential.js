@@ -6,7 +6,7 @@ const Confidential = function (web3) {
 
   let self = this;
 
-  self.methods(web3._extend).forEach(function (method) {
+  Confidential.methods(web3._extend).forEach(function (method) {
     method.attachToObject(self);
   });
 

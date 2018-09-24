@@ -2,36 +2,34 @@
 // sendTransaction to add encryption.
 const KeyManager = require('./keymanager');
 
-let Ceth = function (eth) {
-  let self = this;
-
-  self.keyManager = new KeyManager();
+function Ceth (eth) {
+  this.keyManager = new KeyManager();
 
   // calls to Ceth.contract() should route calls back through the shim.
-  let boundContract = eth.contract.bind(self);
-  self.contract = function (abi) {
+  let boundContract = eth.contract.bind(this);
+  this.contract = function (abi) {
     let inst = boundContract(abi);
     let boundAt = inst.at.bind(inst);
     // TODO: handle confidential creation via an update .new() method.
-    inst.at = function (address, callback, key) {
-      self.keyManager.add(address, key);
+    inst.at = (address, callback, key) => {
+      this.keyManager.add(address, key);
       return boundAt(address, callback);
-    };
+    }
     return inst;
   }
 
-  self._requestManager = eth._requestManager;
-  self._eth = eth;
+  this._requestManager = eth._requestManager;
+  this._eth = eth;
 
   // Note: will need to change for hidden contract code.
-  self.getCode = eth.getCode.bind(eth);
+  this.getCode = eth.getCode.bind(eth);
   // Note: does receipt need to be decrypted?
-  self.getTransactionReceipt = eth.getTransactionReceipt.bind(eth);
-  self.estimateGas = eth.estimateGas.bind(eth);
-  self.filter = eth.estimateGas.bind(eth);
+  this.getTransactionReceipt = eth.getTransactionReceipt.bind(eth);
+  this.estimateGas = eth.estimateGas.bind(eth);
+  this.filter = eth.estimateGas.bind(eth);
 
-  return self;
-};
+  return this;
+}
 
 Ceth.prototype.sendTransaction = function (options, callback) {
   // TODO: encrypt data
