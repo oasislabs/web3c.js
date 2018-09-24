@@ -1,13 +1,10 @@
 /* globals Web3 */
-const PrivateContract = require('./contract');
+const Confidential = require('./confidential');
 
 function makeWeb3c (web3) {
   return function (provider) {
     let obj = new web3(provider);
-    obj._extend({
-      property: 'confidential',
-      methods: PrivateContract.methods(obj._extend)
-    });
+    obj.confidential = new Confidential(obj);
     return obj;
   }
 }
