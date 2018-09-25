@@ -14,7 +14,10 @@ module.exports = {
         exclude: [
           path.resolve(__dirname, 'node_modules')
         ],
-        loader: 'babel-loader'
+        use: [
+          'babel-loader',
+          'webpack-strip-block',
+        ]
       }
     ]
   },
