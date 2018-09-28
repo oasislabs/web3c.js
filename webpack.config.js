@@ -35,6 +35,9 @@ module.exports = {
       './crypto/node': './crypto/subtle',
     }
   },
+  externals: {
+    'text-encoding': 'TextEncoder'
+  },
   output: {
     path: __dirname + '/output',
     filename: 'web3c.js',

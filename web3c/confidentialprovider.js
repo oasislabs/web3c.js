@@ -1,37 +1,45 @@
 // This file encrypts web3c calls as a request manager wrapping shim.
-
-function ConfidentialProvider (keymanager, provider) {
+function ConfidentialProvider (keymanager, internalManager) {
   return {
     send: ConfidentialProvider.send.bind({
       keymanager: keymanager,
-      boundSend: provider.send.bind(provider)
+      manager: internalManager,
     }),
     sendBatch: ConfidentialProvider.sendBatch.bind({
       keymanager: keymanager,
-      boundSend: provider.sendBatch.bind(provider)
+      manager: internalManager,
     }),
-    addSubscription: provider.addSubscription.bind(provider),
-    removeSubscription: provider.removeSubscription.bind(provider),
-    clearSubscriptions: provider.clearSubscriptions.bind(provider),
+    addSubscription: internalManager.addSubscription.bind(internalManager),
+    removeSubscription: internalManager.removeSubscription.bind(internalManager),
+    clearSubscriptions: internalManager.clearSubscriptions.bind(internalManager),
   };
 }
 
 ConfidentialProvider.send = function confidentialSend (payload, callback) {
+  let provider = this.manager.provider;
   // Transformations on intercepted calls.
   if (payload.method == 'confidential_getPublicKey') {
     // TODO: store long-term key in key manager for validation.
   } else if (payload.method == 'eth_sendTransaction') {
     // TODO: encrypt.
   } else if (payload.method == 'eth_call') {
-    // TODO: encrypt.
+    return this.keymanager.get(payload.params[0].to, (key) => {
+      if (typeof key !== 'string') { // error
+        return callback(key);
+      }
+      this.keymanager.encrypt(payload.params[0].data, key, (cyphertext) => {
+        payload.params[0].data = cyphertext.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+        provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+      });
+    });
   }
 
-  return this.boundSend(payload, callback);
+  return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
 };
 
 ConfidentialProvider.sendBatch = function confidentialSendBatch (data, callback) {
   // TODO
-  return this.boundSend(data, callback);
+  return this.manager.sendBatch(data, callback);
 };
 
 // TODO: patch responses for decryption.

@@ -6,12 +6,20 @@ const Confidential = function (web3) {
   this.keyManager = new KeyManager(web3);
   let confidentialShim = ConfidentialProvider(this.keyManager, web3._requestManager);
   Confidential.methods(web3.extend).forEach((method) => {
-    method.setRequestManager(confidentialShim);
+    method.setRequestManager(web3._requestManager);
     method.attachToObject(this);
   });
 
-  this.Contract = web3.eth.Contract;
-  this.Contract.setProvider(confidentialShim);
+  this.Contract = (abi, address, options) => {
+    let c = new web3.eth.Contract(abi, address, options);
+    c.setProvider(confidentialShim);
+
+    if (options && options.key) {
+      this.keyManager.add(address, options.key);
+    }
+
+    return c;
+  };
 };
 
 function getPublicKeyOutputFormatter (t) {
