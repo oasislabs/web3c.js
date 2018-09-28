@@ -1,9 +1,10 @@
 <!doctype html>
   <head>
+    <meta charset="utf-8" />
     <link rel='stylesheet' type='text/css' href='demo.css' />
-    <script src='https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js'></script>
-    <script src='../output/web3c.js'></script>
+    <script src='web3c.js'></script>
     <script src='demo.js'></script>
+    <title>Web3(c).js</title>
   </head>
   <body>
     <header>
@@ -14,7 +15,35 @@
     </aside>
     <section>
       <h2>Interaction with confidential contracts</h2>
-      <code>(this comes last; the high-level interface hiding complexity)</code>
+      <p>
+      A confidential contract can be interacted with through an interface very
+      similar to the one already exposed through Web3. Instead of the
+      <code>web3.eth.contract</code> API, one uses
+      <code>web3.confidential.contract</code>. Confidential contracts are
+      instantiated in the same way as a standard contract - by providing the
+      ABI defining the methods and properties which can be called. An
+      instance of a contract is made in a slightly different way, and this is
+      the only way in which the API diverges from non-confidential contracts.
+      Instead of calling <code>at(deployed_address)</code>, to instantiate an
+      interface to a contract deployed at an address on the chain, one intead
+      calls <code>at(deployed_address, public_key)</code>. The additional
+      parameter specifies the long-term public key of the confidential contract,
+      providing a root of trust allowing the client to securely negotiate a
+      confidential channel for requests to the remote contract.
+      </p>
+      <section id='contractinstantiator'>
+        <h3>confidential.contract</h3>
+        <form id='confidentialcontract_form'>
+          <label for='contract_abi'>Contract ABI:</label>
+          <textarea name='contract_abi'></textarea><br />
+          <label for='contract_address'>Contract Address:</label>
+          <input name='contract_address' type='text' /><br />
+          <label for='contract_key'>Contract PubKey:</label>
+          <input name='contract_key' type='text' /><br />
+          <input type='submit' name='makeContract' value='Instantiate' />
+          <span id='contract_result' class='status'></span>
+        </form>
+      </section>
     </section>
     <section>
       <h1>Under the hood</h1>
@@ -42,10 +71,11 @@
         <section id='getpublickey'>
           <h3>confidential_getPublicKey</h3>
           <form id='getpublickey_form'>
-            <input type='text' name='contract_address' />
+            <label for='contract_address'>Contract Address:</label>
+            <input type='text' name='contract_address' /><br />
             <input type='submit' name='getPublicKey' value='get public key' />
           </form>
-          <span id='getpublickey_result'></span>
+          <span id='getpublickey_result' class='status'></span>
         </section>
       </section>
       <section>
@@ -65,11 +95,13 @@
         <section id='call_enc'>
           <h3>confidential_call_enc</h3>
           <form id='call_enc_form'>
-            <input type='text' name='contract_address' />
-            <input type='text' name='data' />
+            <label for='contract_address'>Contract Address:</label>
+            <input type='text' name='contract_address' /><br />
+            <label for='contract_address'>Call Data:</label>
+            <input type='text' name='data' /><br />
             <input type='submit' name='call' value='call' />
           </form>
-          <span id='call_enc_result'></span>
+          <span id='call_enc_result' class='status'></span>
         </section>
       </section>
     </section>

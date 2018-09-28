@@ -29,11 +29,13 @@
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.5",
+    "copy-webpack-plugin": "^4.5.2",
     "eslint": "^5.2.0",
     "mocha": "^5.2.0",
     "tweetnacl": "^1.0.0",
     "webpack": "^4.16.2",
-    "webpack-command": "^0.4.1"
+    "webpack-command": "^0.4.1",
+    "webpack-strip-block": "^0.2.0"
   },
   "eslintConfig": {
     "parserOptions": {

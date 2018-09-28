@@ -1,9 +1,9 @@
 // Stores known short and longterm keys for contracts,
 // refreshing + validating short-term keys as needed.
 
-function KeyManager (confidential) {
+function KeyManager (web3) {
   this._db = new Map();
-  this._remote = confidential;
+  this._web3 = web3;
 }
 
 KeyManager.prototype.add = function (address, key) {
@@ -20,7 +20,7 @@ KeyManager.prototype.get = function (address, callback) {
   if (this._db[address].shorterm) {
     return callback(this._db[address].shorterm);
   }
-  this._remote.getPublicKey(address, this.onKey.bind(this, address, callback));
+  this._web3.confidential.getPublicKey(address, this.onKey.bind(this, address, callback));
 };
 
 KeyManager.prototype.onKey = function (address, cb, response) {
@@ -29,6 +29,7 @@ KeyManager.prototype.onKey = function (address, cb, response) {
   }
   // TODO: check if response is an error.
   // TODO: validate response signature is from lngterm key.
+  // TODO: reformat / parse.
   this._db[address].shortterm = response.key;
   this._db[address].timestamp = response.timestamp;
   cb(response.key);
