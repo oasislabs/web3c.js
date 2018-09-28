@@ -1,4 +1,5 @@
 const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   mode: 'production',
@@ -31,13 +32,17 @@ module.exports = {
     extensions: [ '.js' ],
     alias: {
       '../crypto/node': '../crypto/subtle',
-      './crypto/node': './crypto/subtle'
+      './crypto/node': './crypto/subtle',
     }
   },
   output: {
     path: __dirname + '/output',
-    filename: 'web3c.js'
+    filename: 'web3c.js',
+    chunkFilename: '[name].js',
   },
+  plugins: [
+    new CopyWebpackPlugin([{from: 'demo/', to: './'}])
+  ],
   devtool: 'source-map',
   target: 'web'
 };

@@ -1,4 +1,5 @@
 const http = require('http');
+const web3 = require('web3');
 
 const onReq = function (req, res) {
   let body = '';
@@ -16,11 +17,19 @@ const onReq = function (req, res) {
 };
 
 function handleRequest (req) {
-  if(req.method == "confidential_getPublicKey") {
-    return {"jsonrpc": "2.0", "id": req.id, "result": "0x1"};
-  } else {
-    return {"jsonrpc": "2.0", "id": req.id, "result": "0x0"};
+  let obj = {
+    'jsonrpc': '2.0',
+    'id': req.id,
+  };
+  if(req.method == 'confidential_getPublicKey') {
+    obj.result = {
+      //TODO: key.
+      'key': 0,
+      'timestamp': web3.utils.toHex((new Date()).valueOf()),
+      'signature': 0,
+    };
   }
+  return obj;
 }
 
 module.exports = function () {

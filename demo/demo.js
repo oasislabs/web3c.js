@@ -1,8 +1,8 @@
 // interactivity for the demo page.
 window.addEventListener('load', function() {
-  //provider
-  getProvider();
-
+  // contract
+  let contractform = document.getElementById('confidentialcontract_form');
+  contractform.addEventListener('submit', oncontractform_submit);
   //getpublickey
   let getpublickeyform = document.getElementById('getpublickey_form');
   getpublickeyform.addEventListener('submit', onpublickeyform_submit);
@@ -12,13 +12,13 @@ window.addEventListener('load', function() {
 }, false);
 
 const getProvider = function () {
-  let ex = new Web3();
-  if (ex.currentProvider !== undefined) {
+  let instance = new Web3c();
+  if (instance.currentProvider !== undefined) {
     document.getElementById('provider').value = 'Browser Provided';
     document.getElementById('provider').disabled = true;
-    return undefined;
+    return instance.currentProvider;
   } else {
-    return new Web3.providers.HttpProvider(document.getElementById('provider').value);
+    return document.getElementById('provider').value;
   }
 }
 
@@ -53,6 +53,25 @@ const oncallform_submit = function (ev) {
     });
   } catch (e) {
     document.getElementById('call_enc_result').innerHTML = e;
+  }
+
+  ev.preventDefault();
+  return false;
+};
+
+let currentContract = null;
+
+const oncontractform_submit = function (ev) {
+  let form = document.getElementById('confidentialcontract_form');
+  let abi = form.contract_abi.value;
+  let address = form.contract_address.value;
+  let key = form.contract_key.value;
+
+  let webc = new Web3c(getProvider());
+  try {
+    currentContract = new webc.confidential.Contract(JSON.parse(abi), address, key);
+  } catch (e) {
+    document.getElementById('contract_result').innerHTML = e;
   }
 
   ev.preventDefault();

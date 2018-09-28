@@ -6,7 +6,7 @@ const gateway = require('./mockgateway');
 describe('Web3', function() {
   // TODO: skip / assume external web3 if in browser.
   let provider = gateway();
-  let serverPort = undefined;
+  let serverPort;
 
   before(function(done) {
     provider.listen(0, () => {
@@ -23,6 +23,6 @@ describe('Web3', function() {
     let inst = new web3c(provider);
 
     let key = await inst.confidential.getPublicKey("0x62f5dffcb1C45133c670C7786cD94B75D69F09e1");
-    assert.equal("0x1", key);
+    assert.equal(0, key.key);
   });
 });

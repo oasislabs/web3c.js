@@ -1,28 +1,17 @@
 // This file provides the "web3.confidential" exported interface
-const CethPromise = require('./ceth-promise');
-const CethCallback = require('./ceth-callback');
+const ConfidentialProvider = require('./confidentialprovider');
+const KeyManager = require('./keymanager');
 
-const Confidential = function (web3, exportPromises) {
-  this._requestManager = web3._requestManager;
+const Confidential = function (web3) {
+  this.keyManager = new KeyManager(web3);
+  let confidentialShim = ConfidentialProvider(this.keyManager, web3._requestManager);
+  Confidential.methods(web3.extend).forEach((method) => {
+    method.setRequestManager(confidentialShim);
+    method.attachToObject(this);
+  });
 
-  let self = this;
-
-  if (exportPromises) {
-    Confidential.methods(web3.extend).forEach(function (method) {
-      method.setRequestManager(web3._requestManager);
-      method.attachToObject(self);
-    });
-
-    let ceth = new CethPromise(web3.eth);
-    self.Contract = ceth.Contract;
-  } else {
-    Confidential.methods(web3._extend).forEach(function (method) {
-      method.attachToObject(self);
-    });
-
-    let ceth = CethCallback(web3.eth);
-    self.contract = ceth.contract;
-  }
+  this.Contract = web3.eth.Contract;
+  this.Contract.setProvider(confidentialShim);
 };
 
 function getPublicKeyOutputFormatter (t) {
@@ -35,11 +24,12 @@ function callOutputFormatter (t) {
 
 Confidential.methods = function (ctx) {
   return [
+    // Second parameter - the long-term key - is intercepted by the provider.
     new ctx.Method({
       name: 'getPublicKey',
       call: 'confidential_getPublicKey',
-      params: 1,
-      inputFormatter: [ctx.formatters.inputAddressFormatter],
+      params: 2,
+      inputFormatter: [ctx.formatters.inputAddressFormatter, (t) => t],
       outputFormatter: getPublicKeyOutputFormatter
     }),
     new ctx.Method({
