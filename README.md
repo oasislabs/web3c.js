@@ -1,5 +1,6 @@
 # web3c.js
 [![CircleCI](https://circleci.com/gh/oasislabs/web3c.js.svg?style=svg)](https://circleci.com/gh/oasislabs/web3c.js)
+[![Coverage Status](https://coveralls.io/repos/github/oasislabs/web3c.js/badge.svg?t=Q8lw6G)](https://coveralls.io/github/oasislabs/web3c.js)
 A Web3 extension for confidential transactions.
 
 ## Installation / Usage
