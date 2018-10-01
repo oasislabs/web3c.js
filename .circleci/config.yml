@@ -27,6 +27,7 @@ jobs:
       # run tests!
       - run: npm test
       - run: npm run-script build
+      - run: npm run-script coverage
 
       - store_artifacts:
           path: output
