@@ -16,31 +16,59 @@ function ConfidentialProvider (keymanager, internalManager) {
 }
 
 ConfidentialProvider.send = function confidentialSend (payload, callback) {
-  let provider = this.manager.provider;
-  // Transformations on intercepted calls.
-  if (payload.method == 'confidential_getPublicKey') {
-    // TODO: store long-term key in key manager for validation.
-  } else if (payload.method == 'eth_sendTransaction') {
-    // TODO: encrypt.
-  } else if (payload.method == 'eth_call') {
-    return this.keymanager.get(payload.params[0].to, (key) => {
-      if (typeof key !== 'string') { // error
-        return callback(key);
-      }
-      this.keymanager.encrypt(payload.params[0].data, key).then((cyphertext) => {
-        payload.params[0].data = cyphertext;
-        provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
-      });
-    });
-  }
+  console.log("send = ", payload);
+  const provider = this.manager.provider;
 
-  return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+  let tx = payload.params[0];
+  // Transformations on intercepted calls.
+  if (payload.method === "eth_sendTransaction") {
+	if (!tx.to) {
+	  // deploy transaction doesn't encrypt anything for v0.5
+	  tx.data = prependConfidential(tx.data);
+	  return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+	}
+	console.log("tx = ", tx);
+	encryptTx.call(this, tx, callback, (encryptedTx) => {
+	  tx.data = prependConfidential(encryptedTx.data);
+	  console.log("encrypted = ", encryptedTx);
+	  provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+	});
+  } else if (payload.method == 'eth_call') {
+	encryptTx.call(this, tx, callback, (tx) => {
+	  payload.method = "confidential_call_enc";
+	  tx.data = prependConfidential(tx.data);
+	  provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
+		this.keymanager.decrypt(resp.result).then((plaintext) => {
+		  resp.result = plaintext.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+		  callback(err, resp);
+		});
+	  });
+	});
+  } else {
+	return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+  }
 };
 
 ConfidentialProvider.sendBatch = function confidentialSendBatch (data, callback) {
   // TODO
   return this.manager.sendBatch(data, callback);
 };
+
+function encryptTx(tx, callback, completionFn) {
+  return this.keymanager.get(tx.to, (key) => {
+    if (typeof key !== 'string') { // error
+      return callback(key);
+    }
+    this.keymanager.encrypt(tx.data, key, (cyphertext) => {
+      tx.data = cyphertext.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+	  completionFn(tx);
+    });
+  });
+}
+
+function prependConfidential(bytes_hex) {
+  return "0x" + Buffer.from('confidential', 'utf8').toString('hex') + bytes_hex.substr(2);
+}
 
 // TODO: patch responses for decryption.
 

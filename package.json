@@ -7,7 +7,7 @@
   "scripts": {
     "build": "webpack-command --entry ./index.js --output output/web3c.js",
     "watch": "webpack-command --watch --entry ./index.js --output output/web3c.js",
-    "test": "nyc --reporter=html --reporter=text mocha && npm run-script lint",
+    "test": "trufle compile && nyc --reporter=html --reporter=text mocha && npm run-script lint",
     "test:browser": "mocha init output/ && webpack-command --entry ./tests.js --output output/tests.js",
     "lint": "eslint *.js web3c/ crypto/",
     "coverage": "nyc report --reporter=text-lcov | coveralls"
@@ -35,6 +35,8 @@
     "eslint": "^5.6.1",
     "mocha": "^5.2.0",
     "nyc": "^13.1.0",
+    "text-encoding": "^0.7.0",
+    "truffle-hdwallet-provider": "0.0.6",
     "tweetnacl": "^1.0.0",
     "webpack": "^4.20.2",
     "webpack-command": "^0.4.1",
