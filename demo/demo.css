@@ -2,3 +2,8 @@
   color: red;
   font-family: monospace;
 }
+
+#contract_methods form {
+  display: block;
+  padding-left: 2em;
+}

@@ -69,11 +69,65 @@ const oncontractform_submit = function (ev) {
 
   let webc = new Web3c(getProvider());
   try {
-    currentContract = new webc.confidential.Contract(JSON.parse(abi), address, key);
+    currentContract = webc.confidential.Contract(JSON.parse(abi), address, key);
+    buildmethodforms();
   } catch (e) {
     document.getElementById('contract_result').innerHTML = e;
   }
 
   ev.preventDefault();
   return false;
+};
+
+const buildmethodforms = function () {
+  let root = document.getElementById('contract_methods');
+  root.innerHTML = "";
+  currentContract._jsonInterface.forEach((method) => {
+    if (method.type !== "function") {
+      return;
+    }
+    let form = document.createElement('form');
+    form.addEventListener('submit', (ev) => {
+      let inputvals = form.getElementsByClassName('input');
+      inputvals = Array.prototype.map.call(inputvals, (i) => i.value);
+
+      let mthd = currentContract.methods[method.name].apply({}, inputvals);
+      try {
+        if(method.constant) {
+          mthd.call().then(function (resp) {
+            console.log(resp);
+          });
+        } else {
+          mthd.send().then(function (resp) {
+            console.log(resp);
+          });
+        }
+      } catch (e) {
+        document.getElementById('contract_result').innerHTML = e;
+      }
+
+      ev.preventDefault();
+      return false;
+    });
+
+    let caption = document.createElement('caption');
+    caption.innerHTML = method.name;
+    form.appendChild(caption);
+
+    let args = method.inputs;
+    args.forEach((arg) => {
+      let input = document.createElement('input');
+      input.className = 'input';
+      input.name = arg.name;
+      input.placeholder = arg.name;
+      form.appendChild(input);
+    });
+
+    let submit = document.createElement('input');
+    submit.value = method.name;
+    submit.type = 'submit';
+    form.appendChild(submit);
+
+    root.appendChild(form);
+  });
 };
