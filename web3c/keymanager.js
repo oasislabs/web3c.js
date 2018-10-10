@@ -53,7 +53,7 @@ function parseKey (keystring) {
   );
 }
 
-KeyManager.prototype.encrypt = async function (msg, key, callback) {
+KeyManager.prototype.encrypt = async function (msg, key) {
   let nonce = nacl.randomBytes(16);
 
   // in node, the require provides an object containing TextEncoder.
@@ -77,7 +77,29 @@ KeyManager.prototype.encrypt = async function (msg, key, callback) {
   for (; i < out.length; i++) {
     out[i] = cyphertext[i - (nonce.length + this.publicKey.length)];
   }
-  callback(cyphertext);
+  return out;
+};
+
+KeyManager.prototype.decrypt = async function (cyphertext) {
+  let cypherBytes = parseKey(cyphertext);
+
+  // split nonce, pubkey, msg
+  let nonce = new Uint8Array(16);
+  let pubKey = new Uint8Array(32);
+  let msg = new Uint8Array(cypherBytes.length - nonce.length - pubKey.length);
+  let i = 0;
+  for (; i < nonce.length; i++) {
+    nonce[i] = cypherBytes[i];
+  }
+  for (; i < nonce.length + pubKey.length; i++) {
+    pubKey[i - nonce.length] = cypherBytes[i];
+  }
+  for (; i < cypherBytes.length; i++) {
+    msg[i - nonce.length - pubKey.length] = cypherBytes[i];
+  }
+
+  let plaintext = await mraeBox.Open(nonce, msg, new Uint8Array(), pubKey, this.getSecretKey());
+  return plaintext;
 };
 
 KeyManager.prototype.onKey = function (address, cb, err, response) {

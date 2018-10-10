@@ -13,7 +13,7 @@ window.addEventListener('load', function() {
 
 const getProvider = function () {
   let instance = new Web3c();
-  if (instance.currentProvider !== undefined) {
+  if (instance.currentProvider !== undefined && instance.currentProvider) {
     document.getElementById('provider').value = 'Browser Provided';
     document.getElementById('provider').disabled = true;
     return instance.currentProvider;
