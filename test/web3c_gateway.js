@@ -12,9 +12,9 @@ describe('Web3', () => {
 
   if (process.env.MOCK_GATEWAY !== '1') {
 
-	const address = "0x1cca28600d7491365520b31b466f88647b9839ec";
 	const mnemonic = 'patient oppose cotton portion chair gentle jelly dice supply salmon blast priority';
 	const provider = new HDWalletProvider(mnemonic, "http://localhost:8545");
+	const address = Object.keys(provider.wallets)[0];
 	const artifact = utils.read_artifact("Counter");
 	let counterContract = (new web3c(provider)).confidential.Contract(artifact.abi);
 	/**
@@ -48,18 +48,14 @@ describe('Web3', () => {
 	  assert.equal(count, 0);
 	});
 
-	/*
-
 	it('should execute a confidential eth_sendRawTransaction to increment the current counter', async () => {
 	  await counterInstance.methods.incrementCounter().send({
 		from: address,
 		gasPrice: '0x3b9aca00',
 		gasLimit: '0x100000'
 	  });
-	  //const count = await counterInstance.methods.getCounter().call();
-	  //assert.equal(count, 1);
+	  const count = await counterInstance.methods.getCounter().call();
+	  assert.equal(count, 1);
 	});
-	*/
-
   }
 })

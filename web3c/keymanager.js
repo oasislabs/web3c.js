@@ -20,6 +20,7 @@ KeyManager.prototype.isRegistered = function (address) {
 
 KeyManager.prototype.get = function (address, callback) {
   address = address.toLowerCase();
+  /*
 
   if (!this._db[address]) {
     return callback(new Error('no known contract at requested address'));
@@ -28,6 +29,7 @@ KeyManager.prototype.get = function (address, callback) {
   if (this._db[address].shorterm) {
     return callback(this._db[address].shorterm);
   }
+  */
   this._web3.confidential.getPublicKey(address, this.onKey.bind(this, address, callback));
 };
 
@@ -99,6 +101,7 @@ KeyManager.prototype.onKey = function (address, cb, err, response) {
   if (err !== null) {
     return cb(err);
   }
+  /*
   address = address.toLowerCase();
 
   if (!this._db[address]) {
@@ -109,6 +112,7 @@ KeyManager.prototype.onKey = function (address, cb, err, response) {
   // TODO: reformat / parse.
   this._db[address].shortterm = response.key;
   this._db[address].timestamp = response.timestamp;
+  */
   cb(response.key);
 };
 

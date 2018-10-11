@@ -16,7 +16,7 @@ function ConfidentialProvider (keymanager, internalManager) {
 }
 
 ConfidentialProvider.send = function confidentialSend (payload, callback) {
-  console.log("send = ", payload);
+
   const provider = this.manager.provider;
 
   let tx = payload.params[0];
@@ -28,8 +28,7 @@ ConfidentialProvider.send = function confidentialSend (payload, callback) {
 	  return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
 	}
 	encryptTx.call(this, tx, callback, (encryptedTx) => {
-	  tx.data = prependConfidential(encryptedTx.data);
-	  console.log("encrypted = ", encryptedTx);
+	  encryptedTx.data = prependConfidential(encryptedTx.data);
 	  provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
 	});
   } else if (payload.method == 'eth_call') {
@@ -72,3 +71,14 @@ function prependConfidential(bytes_hex) {
 // TODO: patch responses for decryption.
 
 module.exports = ConfidentialProvider;
+
+// Return a Uint8Array of an ethereum hex-encoded key
+function parseHex (keystring) {
+  if (keystring.indexOf('0x') === 0) {
+    keystring = keystring.substr(2);
+  }
+  return new Uint8Array(
+    keystring.match(/.{1,2}/g)
+      .map(byte => parseInt(byte, 16))
+  );
+}
