@@ -1,4 +1,7 @@
-const CONFIDENTIAL_PREFIX = '\0pri';
+/**
+ * Hex representation of b'\0pri'.
+ */
+const CONFIDENTIAL_PREFIX = '00707269';
 
 // This file encrypts web3c calls as a request manager wrapping shim.
 function ConfidentialProvider (keymanager, internalManager) {
@@ -92,7 +95,7 @@ class ConfidentialSendTransform {
   }
 
   prependConfidential(bytesHex) {
-    return '0x' + Buffer.from(CONFIDENTIAL_PREFIX, 'utf8').toString('hex') + bytesHex.substr(2);
+    return '0x' + CONFIDENTIAL_PREFIX + bytesHex.substr(2);
   }
 }
 

@@ -44,6 +44,9 @@ async function handleRequest (req) {
     // slice out the key: 0x || \0pri || nonce || public_key || cypher
     let pubKeyStart = 2 + 8 + 32;
     let pubKeyEnd = pubKeyStart + 64;
+	if (encdata.length < pubKeyEnd) {
+	  throw "invalid confidential_call_enc data field";
+	}
     let pubKey = encdata.substring(pubKeyStart, pubKeyEnd);
     obj.result = await manager.encrypt('0x000000000000000000000000000000000000000000000000000000000000000a', pubKey);
   } else if (req.method == 'eth_sendTransaction') {
