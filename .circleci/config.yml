@@ -31,3 +31,32 @@ jobs:
 
       - store_artifacts:
           path: output
+      - persist_to_workspace:
+          root: .
+          paths:
+            - output
+
+  deploy:
+    docker:
+      - image: circleci/python:2.7-jessie
+    steps:
+      - run:
+          name: Install awscli
+          command: sudo pip install awscli
+      - attach_workspace:
+          at: web3c
+      - run:
+          name: Deploy to S3
+          command: aws s3 sync web3c/output/ s3://web3cjs-staging/ --delete
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
