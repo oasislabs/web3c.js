@@ -22,10 +22,10 @@ KeyManager.prototype.get = function (address, callback) {
   address = address.toLowerCase();
 
   if (this._db[address]) {
-	// TODO: check timestamp expiry.
-	if (this._db[address].shorterm) {
+    // TODO: check timestamp expiry.
+    if (this._db[address].shorterm) {
       return callback(this._db[address].shorterm);
-	}
+    }
   }
 
   // always get the key if there is no long term key since we don't fetch it
