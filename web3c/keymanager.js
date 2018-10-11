@@ -2,7 +2,6 @@
 // refreshing + validating short-term keys as needed.
 const nacl = require('tweetnacl');
 const mraeBox = require('../crypto/node/mrae_box');
-const encoder = require('text-encoding');
 
 function KeyManager (web3) {
   this._db = new Map();
@@ -43,7 +42,7 @@ KeyManager.prototype.getSecretKey = function () {
 };
 
 // Return a Uint8Array of an ethereum hex-encoded key
-function parseKey (keystring) {
+function parseHex (keystring) {
   if (keystring.indexOf('0x') === 0) {
     keystring = keystring.substr(2);
   }
@@ -53,17 +52,11 @@ function parseKey (keystring) {
   );
 }
 
-KeyManager.prototype.encrypt = async function (msg, key, callback) {
+KeyManager.prototype.encrypt = async function (msg, key) {
   let nonce = nacl.randomBytes(16);
+  let msgBytes = parseHex(msg);
 
-  // in node, the require provides an object containing TextEncoder.
-  let enc = encoder;
-  if (encoder.TextEncoder) {
-    enc = encoder.TextEncoder;
-  }
-  let msgBytes = new enc().encode(msg);
-
-  let cyphertext = await mraeBox.Seal(nonce, msgBytes, new Uint8Array(), parseKey(key), this.getSecretKey());
+  let cyphertext = await mraeBox.Seal(nonce, msgBytes, new Uint8Array(), parseHex(key), this.getSecretKey());
 
   // prepend nonce, pubkey
   let out = new Uint8Array(nonce.length + this.publicKey.length + cyphertext.length);
@@ -77,7 +70,29 @@ KeyManager.prototype.encrypt = async function (msg, key, callback) {
   for (; i < out.length; i++) {
     out[i] = cyphertext[i - (nonce.length + this.publicKey.length)];
   }
-  callback(cyphertext);
+  return out.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+};
+
+KeyManager.prototype.decrypt = async function (cyphertext) {
+  let cypherBytes = parseHex(cyphertext);
+
+  // split nonce, pubkey, msg
+  let nonce = new Uint8Array(16);
+  let pubKey = new Uint8Array(32);
+  let msg = new Uint8Array(cypherBytes.length - nonce.length - pubKey.length);
+  let i = 0;
+  for (; i < nonce.length; i++) {
+    nonce[i] = cypherBytes[i];
+  }
+  for (; i < nonce.length + pubKey.length; i++) {
+    pubKey[i - nonce.length] = cypherBytes[i];
+  }
+  for (; i < cypherBytes.length; i++) {
+    msg[i - nonce.length - pubKey.length] = cypherBytes[i];
+  }
+
+  let plaintext = await mraeBox.Open(nonce, msg, new Uint8Array(), pubKey, this.getSecretKey());
+  return plaintext.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
 };
 
 KeyManager.prototype.onKey = function (address, cb, err, response) {

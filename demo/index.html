@@ -35,7 +35,45 @@
         <h3>confidential.contract</h3>
         <form id='confidentialcontract_form'>
           <label for='contract_abi'>Contract ABI:</label>
-          <textarea name='contract_abi'></textarea><br />
+          <textarea name='contract_abi'>
+            [
+	{
+		"constant": false,
+		"inputs": [],
+		"name": "incrementCounter",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getCounter",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"name": "newCounter",
+				"type": "uint256"
+			}
+		],
+		"name": "Incremented",
+		"type": "event"
+	}
+]
+          </textarea><br />
           <label for='contract_address'>Contract Address:</label>
           <input name='contract_address' type='text' /><br />
           <label for='contract_key'>Contract PubKey:</label>
@@ -43,6 +81,7 @@
           <input type='submit' name='makeContract' value='Instantiate' />
           <span id='contract_result' class='status'></span>
         </form>
+        <span id='contract_methods'></span>
       </section>
     </section>
     <section>
