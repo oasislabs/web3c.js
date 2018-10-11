@@ -1,3 +1,8 @@
+/**
+ * Hex representation of b'\0pri'.
+ */
+const CONFIDENTIAL_PREFIX = '00707269';
+
 // This file encrypts web3c calls as a request manager wrapping shim.
 function ConfidentialProvider (keymanager, internalManager) {
   return {
@@ -16,25 +21,16 @@ function ConfidentialProvider (keymanager, internalManager) {
 }
 
 ConfidentialProvider.send = function confidentialSend (payload, callback) {
-  let provider = this.manager.provider;
-  // Transformations on intercepted calls.
-  if (payload.method == 'confidential_getPublicKey') {
-    // TODO: store long-term key in key manager for validation.
-  } else if (payload.method == 'eth_sendTransaction') {
-    // TODO: encrypt.
-  } else if (payload.method == 'eth_call') {
-    return this.keymanager.get(payload.params[0].to, (key) => {
-      if (typeof key !== 'string') { // error
-        return callback(key);
-      }
-      this.keymanager.encrypt(payload.params[0].data, key).then((cyphertext) => {
-        payload.params[0].data = cyphertext;
-        provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
-      });
-    });
-  }
+  let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager);
 
-  return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+  if (payload.method === 'eth_sendTransaction') {
+    transform.ethSendTransaction(payload, callback);
+  } else if (payload.method == 'eth_call') {
+    transform.ethCall(payload, callback);
+  } else {
+    const provider = this.manager.provider;
+    return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+  }
 };
 
 ConfidentialProvider.sendBatch = function confidentialSendBatch (data, callback) {
@@ -42,6 +38,65 @@ ConfidentialProvider.sendBatch = function confidentialSendBatch (data, callback)
   return this.manager.sendBatch(data, callback);
 };
 
-// TODO: patch responses for decryption.
+/**
+ * Transforms intercepted eth rpc sends into confidential rpc sends.
+ */
+class ConfidentialSendTransform {
+
+  constructor(provider, keymanager) {
+    this.provider = provider;
+    this.keymanager = keymanager;
+  }
+
+  ethSendTransaction(payload, callback) {
+    const tx = payload.params[0];
+    if (!tx.to) {
+      // deploy transaction doesn't encrypt anything for v0.5
+      tx.data = this.prependConfidential(tx.data);
+      return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+    }
+    this.encryptTx(tx, callback, () => {
+      this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+    });
+  }
+
+  // TODO: get call data signed by the user wallet
+  ethCall(payload, callback) {
+    const tx = payload.params[0];
+    this.encryptTx(tx, callback, () => {
+      payload.method = 'confidential_call_enc';
+      this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
+        if (!resp.result) {
+          callback(err, resp);
+        }
+        this.keymanager.decrypt(resp.result).then((plaintext) => {
+          resp.result = plaintext;
+          callback(err, resp);
+        });
+      });
+    });
+  }
+
+  /**
+   * Mutates the given tx by encrypting the data field and prepending
+   * the unique confidential identifier.
+   */
+  encryptTx(tx, callback, completionFn) {
+    return this.keymanager.get(tx.to, (key) => {
+      if (typeof key !== 'string') { // error
+        return callback(key);
+      }
+      this.keymanager.encrypt(tx.data, key).then((cyphertext) => {
+        tx.data = this.prependConfidential(cyphertext);
+        completionFn();
+      });
+    });
+
+  }
+
+  prependConfidential(bytesHex) {
+    return '0x' + CONFIDENTIAL_PREFIX + bytesHex.substr(2);
+  }
+}
 
 module.exports = ConfidentialProvider;

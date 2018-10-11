@@ -36,8 +36,8 @@ Confidential.methods = function (ctx) {
     new ctx.Method({
       name: 'getPublicKey',
       call: 'confidential_getPublicKey',
-      params: 2,
-      inputFormatter: [ctx.formatters.inputAddressFormatter, (t) => t],
+      params: 1,
+      inputFormatter: [ctx.formatters.inputAddressFormatter],
       outputFormatter: getPublicKeyOutputFormatter
     }),
     new ctx.Method({
