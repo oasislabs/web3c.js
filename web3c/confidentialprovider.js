@@ -1,3 +1,5 @@
+const CONFIDENTIAL_PREFIX = '\0pri';
+
 // This file encrypts web3c calls as a request manager wrapping shim.
 function ConfidentialProvider (keymanager, internalManager) {
   return {
@@ -19,7 +21,7 @@ ConfidentialProvider.send = function confidentialSend (payload, callback) {
   let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager);
 
   if (payload.method === 'eth_sendTransaction') {
-    transform.ethSendRawTransaction(payload, callback);
+    transform.ethSendTransaction(payload, callback);
   } else if (payload.method == 'eth_call') {
     transform.ethCall(payload, callback);
   } else {
@@ -43,7 +45,7 @@ class ConfidentialSendTransform {
     this.keymanager = keymanager;
   }
 
-  ethSendRawTransaction(payload, callback) {
+  ethSendTransaction(payload, callback) {
     const tx = payload.params[0];
     if (!tx.to) {
       // deploy transaction doesn't encrypt anything for v0.5
@@ -89,7 +91,7 @@ class ConfidentialSendTransform {
   }
 
   prependConfidential(bytesHex) {
-    return '0x' + Buffer.from('confidential', 'utf8').toString('hex') + bytesHex.substr(2);
+    return '0x' + Buffer.from(CONFIDENTIAL_PREFIX, 'utf8').toString('hex') + bytesHex.substr(2);
   }
 }
 

@@ -41,8 +41,8 @@ async function handleRequest (req) {
     };
   } else if (req.method == 'confidential_call_enc') {
     let encdata = req.params[0].data;
-    // slice out the key: 0x || confidential || nonce || public_key || cypher
-    let pubKeyStart = 2 + 24 + 32;
+    // slice out the key: 0x || \0pri || nonce || public_key || cypher
+    let pubKeyStart = 2 + 8 + 32;
     let pubKeyEnd = pubKeyStart + 64;
     let pubKey = encdata.substring(pubKeyStart, pubKeyEnd);
     obj.result = await manager.encrypt('0x000000000000000000000000000000000000000000000000000000000000000a', pubKey);
