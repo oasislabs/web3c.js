@@ -27,7 +27,6 @@ ConfidentialProvider.send = function confidentialSend (payload, callback) {
 	  tx.data = prependConfidential(tx.data);
 	  return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
 	}
-	console.log("tx = ", tx);
 	encryptTx.call(this, tx, callback, (encryptedTx) => {
 	  tx.data = prependConfidential(encryptedTx.data);
 	  console.log("encrypted = ", encryptedTx);
@@ -39,7 +38,7 @@ ConfidentialProvider.send = function confidentialSend (payload, callback) {
 	  tx.data = prependConfidential(tx.data);
 	  provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
 		this.keymanager.decrypt(resp.result).then((plaintext) => {
-		  resp.result = plaintext.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+		  resp.result = plaintext;
 		  callback(err, resp);
 		});
 	  });
@@ -59,8 +58,8 @@ function encryptTx(tx, callback, completionFn) {
     if (typeof key !== 'string') { // error
       return callback(key);
     }
-    this.keymanager.encrypt(tx.data, key, (cyphertext) => {
-      tx.data = cyphertext.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+    this.keymanager.encrypt(tx.data, key).then((cyphertext) => {
+      tx.data = cyphertext;
 	  completionFn(tx);
     });
   });
