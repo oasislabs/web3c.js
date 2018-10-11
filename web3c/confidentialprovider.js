@@ -57,6 +57,7 @@ class ConfidentialSendTransform {
     });
   }
 
+  // TODO: get call data signed by the user wallet
   ethCall(payload, callback) {
     const tx = payload.params[0];
     this.encryptTx(tx, callback, () => {
