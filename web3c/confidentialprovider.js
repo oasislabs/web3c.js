@@ -28,7 +28,7 @@ ConfidentialProvider.send = function confidentialSend (payload, callback) {
         return callback(key);
       }
       this.keymanager.encrypt(payload.params[0].data, key).then((cyphertext) => {
-        payload.params[0].data = cyphertext.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+        payload.params[0].data = cyphertext;
         provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
       });
     });

@@ -10,10 +10,9 @@ describe('Key Manager', function() {
 
     let pubkey = km2.publicKey.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
 
-    let cyphertext = await km1.encrypt("this is a test", pubkey);
-    let hexcypher = cyphertext.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+    let cyphertext = await km1.encrypt("0x1234abcdef", pubkey);
 
-    let recover = await km2.decrypt(hexcypher);
-    assert.equal("this is a test", recover);
+    let recover = await km2.decrypt(cyphertext);
+    assert.equal("0x1234abcdef", recover);
   });
 });
