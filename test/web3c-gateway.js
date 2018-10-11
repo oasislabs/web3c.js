@@ -8,20 +8,19 @@ const utils = require('./utils');
 /**
  * Tests against an actual gateway instead of a mock.
  */
-describe('Web3', () => {
+describe('Web3c-Gateway', () => {
 
-  if (process.env.MOCK_GATEWAY !== '1') {
+  if (process.env.GATEWAY === '1') {
 
     const mnemonic = 'patient oppose cotton portion chair gentle jelly dice supply salmon blast priority';
     const provider = new HDWalletProvider(mnemonic, 'http://localhost:8545');
     const address = Object.keys(provider.wallets)[0];
     const artifact = utils.read_artifact('Counter');
-    let counterContract = (new web3c(provider)).confidential.Contract(artifact.abi);
+    const counterContract = (new web3c(provider)).confidential.Contract(artifact.abi);
     /**
      * On chain contract that these tests will use and update.
      */
     let counterInstance = null;
-
 
     it('should retrieve contract keys', async () => {
       let provider = new web3.providers.HttpProvider('http://localhost:' + '8545');
