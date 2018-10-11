@@ -51,7 +51,7 @@ async function handleRequest (req) {
     if (encdata.startsWith("0x")) {
       encdata = encdata.substr(2);
     }
-    // remove 0x + confidential before decrypting
+    // remove 0x + pri before decrypting
     let plaindata = await manager.decrypt(encdata.substr(2 + 24));
     obj.result = plaindata;
   }
