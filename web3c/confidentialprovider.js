@@ -18,13 +18,13 @@ function ConfidentialProvider (keymanager, internalManager) {
 ConfidentialProvider.send = function confidentialSend (payload, callback) {
   let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager);
   // Transformations on intercepted calls.
-  if (payload.method === "eth_sendTransaction") {
-	transform.ethSendRawTransaction(payload, callback);
+  if (payload.method === 'eth_sendTransaction') {
+    transform.ethSendRawTransaction(payload, callback);
   } else if (payload.method == 'eth_call') {
-	transform.ethCall(payload, callback);
+    transform.ethCall(payload, callback);
   } else {
-	const provider = this.manager.provider;
-	return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+    const provider = this.manager.provider;
+    return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
   }
 };
 
@@ -36,33 +36,33 @@ ConfidentialProvider.sendBatch = function confidentialSendBatch (data, callback)
 class ConfidentialSendTransform {
 
   constructor(provider, keymanager) {
-	this.provider = provider;
-	this.keymanager = keymanager;
+    this.provider = provider;
+    this.keymanager = keymanager;
   }
 
   ethSendRawTransaction(payload, callback) {
-	const tx = payload.params[0];
-	if (!tx.to) {
+    const tx = payload.params[0];
+    if (!tx.to) {
 	  // deploy transaction doesn't encrypt anything for v0.5
 	  tx.data = this.prependConfidential(tx.data);
 	  return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
-	}
-	this.encryptTx(tx, callback, (encryptedTx) => {
+    }
+    this.encryptTx(tx, callback, (encryptedTx) => {
 	  this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
-	});
+    });
   }
 
   ethCall(payload, callback) {
-	const tx = payload.params[0];
-	this.encryptTx(tx, callback, (tx) => {
-	  payload.method = "confidential_call_enc";
+    const tx = payload.params[0];
+    this.encryptTx(tx, callback, (tx) => {
+	  payload.method = 'confidential_call_enc';
 	  this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
-		this.keymanager.decrypt(resp.result).then((plaintext) => {
+        this.keymanager.decrypt(resp.result).then((plaintext) => {
 		  resp.result = plaintext;
 		  callback(err, resp);
-		});
+        });
 	  });
-	});
+    });
   }
 
   /**
@@ -70,20 +70,20 @@ class ConfidentialSendTransform {
    * the unique confidential identifier.
    */
   encryptTx(tx, callback, completionFn) {
-	return this.keymanager.get(tx.to, (key) => {
+    return this.keymanager.get(tx.to, (key) => {
       if (typeof key !== 'string') { // error
-		return callback(key);
+        return callback(key);
       }
       this.keymanager.encrypt(tx.data, key).then((cyphertext) => {
-		tx.data = this.prependConfidential(cyphertext);
-		completionFn(tx);
+        tx.data = this.prependConfidential(cyphertext);
+        completionFn(tx);
       });
-	});
+    });
 
   }
 
   prependConfidential(bytes_hex) {
-	return "0x" + Buffer.from('confidential', 'utf8').toString('hex') + bytes_hex.substr(2);
+    return '0x' + Buffer.from('confidential', 'utf8').toString('hex') + bytes_hex.substr(2);
   }
 }
 
