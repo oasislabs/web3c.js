@@ -17,7 +17,7 @@ function ConfidentialProvider (keymanager, internalManager) {
 
 ConfidentialProvider.send = function confidentialSend (payload, callback) {
   let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager);
-  // Transformations on intercepted calls.
+
   if (payload.method === 'eth_sendTransaction') {
     transform.ethSendRawTransaction(payload, callback);
   } else if (payload.method == 'eth_call') {
@@ -33,6 +33,9 @@ ConfidentialProvider.sendBatch = function confidentialSendBatch (data, callback)
   return this.manager.sendBatch(data, callback);
 };
 
+/**
+ * Transforms intercepted eth rpc sends into confidential rpc sends.
+ */
 class ConfidentialSendTransform {
 
   constructor(provider, keymanager) {
@@ -57,6 +60,9 @@ class ConfidentialSendTransform {
     this.encryptTx(tx, callback, () => {
       payload.method = 'confidential_call_enc';
       this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
+        if (!resp.result) {
+          callback(err, resp);
+        }
         this.keymanager.decrypt(resp.result).then((plaintext) => {
           resp.result = plaintext;
           callback(err, resp);
@@ -82,8 +88,8 @@ class ConfidentialSendTransform {
 
   }
 
-  prependConfidential(bytes_hex) {
-    return '0x' + Buffer.from('confidential', 'utf8').toString('hex') + bytes_hex.substr(2);
+  prependConfidential(bytesHex) {
+    return '0x' + Buffer.from('confidential', 'utf8').toString('hex') + bytesHex.substr(2);
   }
 }
 
