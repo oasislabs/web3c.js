@@ -62,3 +62,6 @@ typings/
 
 # webpack generated output
 output/
+
+# contract artifacts
+test/build/*

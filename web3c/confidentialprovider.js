@@ -43,25 +43,25 @@ class ConfidentialSendTransform {
   ethSendRawTransaction(payload, callback) {
     const tx = payload.params[0];
     if (!tx.to) {
-	  // deploy transaction doesn't encrypt anything for v0.5
-	  tx.data = this.prependConfidential(tx.data);
-	  return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+      // deploy transaction doesn't encrypt anything for v0.5
+      tx.data = this.prependConfidential(tx.data);
+      return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
     }
-    this.encryptTx(tx, callback, (encryptedTx) => {
-	  this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+    this.encryptTx(tx, callback, () => {
+      this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
     });
   }
 
   ethCall(payload, callback) {
     const tx = payload.params[0];
-    this.encryptTx(tx, callback, (tx) => {
-	  payload.method = 'confidential_call_enc';
-	  this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
+    this.encryptTx(tx, callback, () => {
+      payload.method = 'confidential_call_enc';
+      this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
         this.keymanager.decrypt(resp.result).then((plaintext) => {
-		  resp.result = plaintext;
-		  callback(err, resp);
+          resp.result = plaintext;
+          callback(err, resp);
         });
-	  });
+      });
     });
   }
 
@@ -76,7 +76,7 @@ class ConfidentialSendTransform {
       }
       this.keymanager.encrypt(tx.data, key).then((cyphertext) => {
         tx.data = this.prependConfidential(cyphertext);
-        completionFn(tx);
+        completionFn();
       });
     });
 
