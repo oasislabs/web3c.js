@@ -23,7 +23,6 @@ describe('Web3c-Gateway', () => {
     let counterInstance = null;
 
     it('should retrieve contract keys', async () => {
-      let provider = new web3.providers.HttpProvider('http://localhost:' + '8545');
       let inst = new web3c(provider);
       let key = await inst.confidential.getPublicKey('0x62f5dffcb1C45133c670C7786cD94B75D69F09e1');
       assert.equal(64 + 2, key.key.length);
