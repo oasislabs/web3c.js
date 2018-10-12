@@ -36,25 +36,30 @@ jobs:
           paths:
             - output
 
-  deploy:
+  deploy-staging:
     docker:
       - image: circleci/python:2.7-jessie
     steps:
       - run:
           name: Install awscli
           command: sudo pip install awscli
+      - run:
+          # CircleCI's AWS Credentials are allowed to assume a role that has S3
+          # access in the staging account. 
+          name: Create an ~/.aws/config file to assume the staging role for aws. 
+          command: echo "[profile staging]\nrole_arn = ${AWS_STAGING_ROLE_ARN}\ncredential_source = Environment\n" > ~/.aws/config
       - attach_workspace:
           at: web3c
       - run:
           name: Deploy to S3
-          command: aws s3 sync web3c/output/ s3://web3cjs-staging/ --delete
+          command: aws s3 sync --profile staging web3c/output/ s3://web3cjs-staging/ --delete
 
 workflows:
   version: 2
   build-and-deploy:
     jobs:
       - build
-      - deploy:
+      - deploy-staging:
           requires:
             - build
           filters:
