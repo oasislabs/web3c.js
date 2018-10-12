@@ -47,7 +47,7 @@ jobs:
           # CircleCI's AWS Credentials are allowed to assume a role that has S3
           # access in the staging account. 
           name: Create an ~/.aws/config file to assume the staging role for aws. 
-          command: echo "[profile staging]\nrole_arn = ${AWS_STAGING_ROLE_ARN}\ncredential_source = Environment\n" > ~/.aws/config
+          command: mkdir -p ~/.aws && echo "[profile staging]\nrole_arn = ${AWS_STAGING_ROLE_ARN}\ncredential_source = Environment\n" > ~/.aws/config
       - attach_workspace:
           at: web3c
       - run:
