@@ -21,13 +21,15 @@ KeyManager.prototype.isRegistered = function (address) {
 KeyManager.prototype.get = function (address, callback) {
   address = address.toLowerCase();
 
-  if (!this._db[address]) {
-    return callback(new Error('no known contract at requested address'));
+  if (this._db[address]) {
+    // TODO: check timestamp expiry.
+    if (this._db[address].shorterm) {
+      return callback(this._db[address].shorterm);
+    }
   }
-  // TODO: check timestamp expiry.
-  if (this._db[address].shorterm) {
-    return callback(this._db[address].shorterm);
-  }
+
+  // always get the key if there is no long term key since we don't fetch it
+  // from the deploy responses at the moment. todo: oasislabs/web3c.js#27
   this._web3.confidential.getPublicKey(address, this.onKey.bind(this, address, callback));
 };
 
@@ -99,16 +101,20 @@ KeyManager.prototype.onKey = function (address, cb, err, response) {
   if (err !== null) {
     return cb(err);
   }
+
   address = address.toLowerCase();
 
+  // early exit if there is no long term key since we don't fetch it
+  // from the deploy responses at the moment. todo: oasislabs/web3c.js#27
   if (!this._db[address]) {
-    return cb(new Error('Recieved key for unregistered address'));
+    return cb(response.key);
   }
   // TODO: check if response is an error.
   // TODO: validate response signature is from lngterm key.
   // TODO: reformat / parse.
   this._db[address].shortterm = response.key;
   this._db[address].timestamp = response.timestamp;
+
   cb(response.key);
 };
 

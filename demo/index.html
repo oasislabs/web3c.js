@@ -35,45 +35,7 @@
         <h3>confidential.contract</h3>
         <form id='confidentialcontract_form'>
           <label for='contract_abi'>Contract ABI:</label>
-          <textarea name='contract_abi'>
-            [
-	{
-		"constant": false,
-		"inputs": [],
-		"name": "incrementCounter",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "getCounter",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"name": "newCounter",
-				"type": "uint256"
-			}
-		],
-		"name": "Incremented",
-		"type": "event"
-	}
-]
-          </textarea><br />
+          <textarea id='call_abi' name='contract_abi'></textarea><br />
           <label for='contract_address'>Contract Address:</label>
           <input name='contract_address' type='text' /><br />
           <label for='contract_key'>Contract PubKey:</label>
@@ -82,6 +44,28 @@
           <span id='contract_result' class='status'></span>
         </form>
         <span id='contract_methods'></span>
+      </section>
+      <section>
+        <h2>Creating Confidential Contracts</h2>
+        <p>
+          A new confidential contract is deployed in much the same way as a
+          normal contract deployment: A transaction containing the contract
+          code is sent with no <i>to</i> destination specified. Confidential
+          contracts are distinguished from normal contracts by a prefix in the
+          data parameter of the transaction. This is the same mechanism that
+          would distinguish a wasm contract from an EVM contract. In the case
+          of confidential contracts, the prefix is <code>\0pri</code> The
+          initial 0 byte, as in wasm contracts, is a stop instruction to the
+          evm interpreter for backwards compatibility.
+        </p>
+        <form id='deploy_form'>
+          <label for='contract_bytecode'>Contract Bytecode:</label>
+          <input id='contract_bytecode' name='contract_bytecode' type='text' /><br />
+          <label for='contract_abi'>Contract ABI:</label>
+          <textarea id='deploy_abi' name='contract_abi'></textarea><br />
+          <input type='submit' name='deployContract' value='Deploy' />
+          <span id='deploy_result' class='status'></span>
+        </form>
       </section>
     </section>
     <section>

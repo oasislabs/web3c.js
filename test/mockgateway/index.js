@@ -15,7 +15,7 @@ const onReq = function (req, res) {
     let jsonreq = JSON.parse(body);
     res.writeHead(200, {
         'Content-Type': 'text/json',
-		'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': '*',
     });
     handleRequest(jsonreq).then(resp => res.end(JSON.stringify(resp)));
   });
@@ -39,17 +39,26 @@ async function handleRequest (req) {
       'timestamp': web3.utils.toHex((new Date()).valueOf()),
       'signature': 0,
     };
-  } else if (req.method == 'eth_call') {
-
-    obj.result = '0x000000000000000000000000000000000000000000000000000000000000000a';
+  } else if (req.method == 'confidential_call_enc') {
+    let encdata = req.params[0].data;
+    // slice out the key: 0x || \0pri || nonce || public_key || cypher
+    let pubKeyStart = 2 + 8 + 32;
+    let pubKeyEnd = pubKeyStart + 64;
+    if (encdata.length < pubKeyEnd) {
+      throw "invalid confidential_call_enc data field";
+    }
+    let pubKey = encdata.substring(pubKeyStart, pubKeyEnd);
+    obj.result = await manager.encrypt('0x000000000000000000000000000000000000000000000000000000000000000a', pubKey);
   } else if (req.method == 'eth_sendTransaction') {
     let encdata = req.params[0].data;
     if (encdata.startsWith("0x")) {
       encdata = encdata.substr(2);
     }
-    let plaindata = await manager.decrypt(encdata);
+    // remove 0x + pri before decrypting
+    let plaindata = await manager.decrypt(encdata.substr(2 + 24));
     obj.result = plaindata;
   }
+
   return obj;
 }
 
