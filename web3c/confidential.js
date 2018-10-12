@@ -2,6 +2,13 @@
 const ConfidentialProvider = require('./confidentialprovider');
 const KeyManager = require('./keymanager');
 
+/**
+ * Confidential
+ * This module exports the `web3.confidential` namespace. It defines the
+ * parameters of the raw underlying web3 methods added to the web3 protocol,
+ * and exposes the confidential contract interface by creating a
+ * web3.eth.Contract communication through a ConfidentialProvider.
+ */
 const Confidential = function (web3) {
   this.keyManager = new KeyManager(web3);
   let confidentialShim = ConfidentialProvider(this.keyManager, web3._requestManager);
