@@ -21,6 +21,14 @@ const Confidential = function (web3) {
     let c = new web3.eth.Contract(abi, address, options);
     c.setProvider(confidentialShim);
 
+    // hook to ensure deployed contracts retain the confidential provider.
+    let boundClone = c.clone.bind(c);
+    c.clone = () => {
+      let cloned = boundClone();
+      cloned.setProvider(confidentialShim);
+      return cloned;
+    };
+
     if (options && options.key) {
       this.keyManager.add(address, options.key);
     }
