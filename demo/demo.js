@@ -31,6 +31,12 @@ window.addEventListener('load', function () {
   //call
   let callform = document.getElementById('call_enc_form');
   callform.addEventListener('submit', onCallFormSubmit);
+
+  try {
+    getProvider();
+  } catch(e) {
+    document.getElementById('startup').innerHTML = e.message;
+  }
 }, false);
 
 function getProvider () {
