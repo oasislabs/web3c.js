@@ -67,10 +67,6 @@ describe('Web3', function() {
       assert.fail(e);
     }
 
-    // hack since the returned contract above doesn't use our shim (fix me)
-    // todo: key
-    instance = (new web3c(gw)).confidential.Contract(artifact.abi, instance._address);
-
     await instance.methods.incrementCounter().send({
       from: address,
       gasPrice: '0x3b9aca00',
