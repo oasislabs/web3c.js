@@ -3,21 +3,40 @@
 const nacl = require('tweetnacl');
 const mraeBox = require('../crypto/node/mrae_box');
 
+/**
+ * Keymanager tracks contract keys. It also is responsible for refreshing
+ * short-term contract keys as needed through an underlying web3c interface.
+ */
 function KeyManager (web3) {
   this._db = new Map();
   this._web3 = web3;
 }
 
+/**
+ * Add a longterm key for a contract to the database.
+ * @param address Address The contract Address.
+ * @param key EthHex The hex encoding of the longterm key.
+ */
 KeyManager.prototype.add = function (address, key) {
   this._db[address.toLowerCase()] = {
     longterm: key
   };
 };
 
+/**
+ * Check if a contract is registered with the key manager.
+ * @param address The address of the contract
+ * @return bool if the address is in the keymanager database.
+ */
 KeyManager.prototype.isRegistered = function (address) {
   return (address in this._db);
 };
 
+/**
+ * Get a short term key for a given contract.
+ * @param address Address the contract to request a key for
+ * @param callback Function callback provided either a key or error
+ */
 KeyManager.prototype.get = function (address, callback) {
   address = address.toLowerCase();
 
@@ -33,6 +52,11 @@ KeyManager.prototype.get = function (address, callback) {
   this._web3.confidential.getPublicKey(address, this.onKey.bind(this, address, callback));
 };
 
+/**
+ * Get the key for the local client key manager.
+ * @private
+ * @return Uint8Array of local private key.
+ */
 KeyManager.prototype.getSecretKey = function () {
   if (!this.secretKey) {
     let keypair = nacl.box.keyPair();
@@ -43,7 +67,9 @@ KeyManager.prototype.getSecretKey = function () {
   return this.secretKey;
 };
 
-// Return a Uint8Array of an ethereum hex-encoded key
+/**
+ * Return a Uint8Array of an ethereum hex-encoded key (EthHex)
+ */
 function parseHex (keystring) {
   if (keystring.indexOf('0x') === 0) {
     keystring = keystring.substr(2);
@@ -54,6 +80,12 @@ function parseHex (keystring) {
   );
 }
 
+/**
+ * Encrypt an EthHex message using an EthHex public key for a contract.
+ * @param msg EthHex the message
+ * @param key EthHex remote public key.
+ * @return EthHex The encrypted message
+ */
 KeyManager.prototype.encrypt = async function (msg, key) {
   let nonce = nacl.randomBytes(16);
   let msgBytes = parseHex(msg);
@@ -75,6 +107,11 @@ KeyManager.prototype.encrypt = async function (msg, key) {
   return out.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
 };
 
+/**
+ * Encrypt an EthHex message with the local private key. Rejects on error.
+ * @param msg EthHex the encrypted message
+ * @return EthHex The decoded message.
+ */
 KeyManager.prototype.decrypt = async function (cyphertext) {
   let cypherBytes = parseHex(cyphertext);
 
@@ -97,6 +134,13 @@ KeyManager.prototype.decrypt = async function (cyphertext) {
   return plaintext.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
 };
 
+/**
+ * Track short term keys in responses to requests made in `get`.
+ * @param address EthHex the address of the contract
+ * @param cb Function The continuation to call on completion with error or key.
+ * @param err Error If there was an error in the getPublicKey call
+ * @param response the response from the web3 gateway with short term key.
+ */
 KeyManager.prototype.onKey = function (address, cb, err, response) {
   if (err !== null) {
     return cb(err);
