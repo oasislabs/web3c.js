@@ -3,8 +3,9 @@ const web3 = require('web3');
 const web3c = require('../web3c');
 const gateway = require('./mockgateway');
 const artifact = require('../demo/example.json');
+const HDWalletProvider = require('truffle-hdwallet-provider');
 
-describe('Web3', function() {
+describe('Web3', () => {
 
   let gw;
   let address;
@@ -32,7 +33,6 @@ describe('Web3', function() {
 
   it('should retrieve contract keys', async function() {
     let inst = new web3c(gw);
-
     let key = await inst.confidential.getPublicKey("0x62f5dffcb1C45133c670C7786cD94B75D69F09e1");
     assert.equal(64 + 2, key.key.length);
   });
@@ -74,5 +74,5 @@ describe('Web3', function() {
     });
     const count = await instance.methods.getCounter().call();
     assert.equal(count, 1);
-  });
+  }).timeout(5000);
 });
