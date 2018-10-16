@@ -108,7 +108,7 @@ class ConfidentialSendTransform {
         return callback(key);
       }
       this.keymanager.encrypt(tx.data, key).then((cyphertext) => {
-        tx.data = this.prependConfidential(cyphertext);
+        tx.data = cyphertext;
         callback();
       });
     });

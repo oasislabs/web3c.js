@@ -42,8 +42,8 @@ async function handleRequest (req) {
     };
   } else if (req.method == 'confidential_call_enc') {
     let encdata = req.params[0].data;
-    // slice out the key: 0x || \0pri || nonce || public_key || cypher
-    let pubKeyStart = 2 + 8 + 32;
+    // slice out the key: 0x || nonce || public_key || cypher
+    let pubKeyStart = 2 + 32;
     let pubKeyEnd = pubKeyStart + 64;
     if (encdata.length < pubKeyEnd) {
       throw "invalid confidential_call_enc data field";
@@ -69,7 +69,7 @@ async function handleRequest (req) {
     } else {
       // Transact
       try {
-        let plaindata = await manager.decrypt(encdata.substr(8));
+        let plaindata = await manager.decrypt(encdata);
         obj.result = "0x000000000000000000000000000000000000000000000000000000000000000e";
       } catch (e) {
         console.warn('unable to decrypt:', e);
