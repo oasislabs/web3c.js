@@ -16,7 +16,7 @@ module.exports = function (provider) {
   }
 };
 
-if (typeof Web3 !== 'undefined') {
+if (typeof Web3 !== 'undefined' && (new Web3()).version && !(new Web3()).version.api) {
   localWeb3 = Web3;
 } else if (typeof define !== 'undefined') {
   // webpack
