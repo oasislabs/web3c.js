@@ -3,7 +3,15 @@
  */
 const CONFIDENTIAL_PREFIX = '00707269';
 
-// This file encrypts web3c calls as a request manager wrapping shim.
+/**
+ * ConfidentialProvider resolves calls from a Web3.eth.Contract, in particular
+ * `eth_sendTransaction` and `eth_call`, and transforms them into confidential
+ * transactions and calls.
+ * @param keymanager KeyManager The key manager holding the local keypair and
+ *     tracking keypair information about the remote contract.
+ * @param internalManager web3.RequestManager The underlying manager for sending
+ *     transactiosn to a web3 gateway.
+ */
 function ConfidentialProvider (keymanager, internalManager) {
   return {
     send: ConfidentialProvider.send.bind({
@@ -20,6 +28,12 @@ function ConfidentialProvider (keymanager, internalManager) {
   };
 }
 
+/**
+ * send will take calls from a web3 component, wrap them in a secure channel,
+ * and pass them to the underlying inernalManager.
+ * @param payload Object The web3 call payload.
+ * @param callback Function The function to call with the result.
+ */
 ConfidentialProvider.send = function confidentialSend (payload, callback) {
   let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager);
 
@@ -39,10 +53,9 @@ ConfidentialProvider.sendBatch = function confidentialSendBatch (data, callback)
 };
 
 /**
- * Transforms intercepted eth rpc sends into confidential rpc sends.
+ * Wrap transactions in a confidential channel.
  */
 class ConfidentialSendTransform {
-
   constructor(provider, keymanager) {
     this.provider = provider;
     this.keymanager = keymanager;
@@ -56,7 +69,10 @@ class ConfidentialSendTransform {
       // TODO: recover long-term key from tx receipt if present.
       return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
     }
-    this.encryptTx(tx, callback, () => {
+    this.encryptTx(tx, (err) => {
+      if (err) {
+        return callback(err);
+      }
       this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
     });
   }
@@ -64,7 +80,10 @@ class ConfidentialSendTransform {
   // TODO: get call data signed by the user wallet
   ethCall(payload, callback) {
     const tx = payload.params[0];
-    this.encryptTx(tx, callback, () => {
+    this.encryptTx(tx, (err) => {
+      if (err) {
+        return callback(err);
+      }
       payload.method = 'confidential_call_enc';
       this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
         if (!resp.result) {
@@ -81,18 +100,19 @@ class ConfidentialSendTransform {
   /**
    * Mutates the given tx by encrypting the data field and prepending
    * the unique confidential identifier.
+   * @param tx Object The eth transaction.
+   * @param callback Function
    */
-  encryptTx(tx, callback, completionFn) {
+  encryptTx(tx, callback) {
     return this.keymanager.get(tx.to, (key) => {
       if (typeof key !== 'string') { // error
         return callback(key);
       }
       this.keymanager.encrypt(tx.data, key).then((cyphertext) => {
-        tx.data = this.prependConfidential(cyphertext);
-        completionFn();
+        tx.data = cyphertext;
+        callback();
       });
     });
-
   }
 
   prependConfidential(bytesHex) {

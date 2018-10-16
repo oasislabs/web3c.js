@@ -3,12 +3,16 @@ const Confidential = require('./confidential');
 
 let localWeb3 = undefined;
 
+/**
+ * Web3c is a wrapper that can be invocated in the same way as Web3.
+ * Expects Web3 v1.0
+ */
 module.exports = function (provider) {
   localWeb3.call(this, provider);
   if (this.version && !this.version.api) { // v1.0 series
     this.confidential = new Confidential(this);
   } else {
-    throw new Error('Unexpected web3 version');
+    throw new Error('Unexpected web3 version. Web3c Expects Web3 1.0');
   }
 };
 
