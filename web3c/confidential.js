@@ -20,13 +20,19 @@ const Confidential = function (web3) {
 
     return c;
   };
+
+  // Allow client to attempt decoding of encrypted logs.
+  this.decodeLog = async (log) => {
+    try {
+      let plainlog = await this.keyManager.decrypt(log);
+      return plainlog;
+    } catch (e) {
+      return null;
+    }
+  };
 };
 
 function getPublicKeyOutputFormatter (t) {
-  return t;
-}
-
-function callOutputFormatter (t) {
   return t;
 }
 
@@ -45,7 +51,7 @@ Confidential.methods = function (ctx) {
       call: 'confidential_call_enc',
       params: 2,
       inputFormatter: [ctx.formatters.inputCallFormatter, ctx.formatters.inputDefaultBlockNumberFormatter],
-      outputFormatter: callOutputFormatter
+      outputFormatter: ctx.formatters.outputCallFormatter
     }),
   ];
 };

@@ -53,6 +53,7 @@ class ConfidentialSendTransform {
     if (!tx.to) {
       // deploy transaction doesn't encrypt anything for v0.5
       tx.data = this.prependConfidential(tx.data);
+      // TODO: recover long-term key from tx receipt if present.
       return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
     }
     this.encryptTx(tx, callback, () => {
