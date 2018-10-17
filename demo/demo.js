@@ -40,6 +40,15 @@ window.addEventListener('load', function () {
 }, false);
 
 function getProvider () {
+  if (window.ethereum) {
+    window.ethereum.enable().catch((e) => {
+      console.error(e);
+      document.getElementById('startup').innerHTML = e.message;
+    });
+    document.getElementById('provider').value = 'Injected';
+    document.getElementById('provider').disabled = true;
+    return window.ethereum;
+  }
   let instance = new Web3c();
   if (instance.currentProvider) {
     document.getElementById('provider').value = 'Browser Provided';
@@ -118,7 +127,9 @@ function onDeployFormSubmit (ev) {
   let webc = new Web3c(getProvider());
   try {
     let contract = webc.confidential.Contract(JSON.parse(abi));
-    contract.deploy(bytecode).send().then((c) => {
+    webc.eth.getAccounts().then((a) => {
+      return contract.deploy({data: bytecode}).send({from: a[0]});
+    }).then((c) => {
       currentContract = c;
       buildMethodForms();
     }).catch((e) => {
