@@ -75,4 +75,30 @@ describe('Web3', () => {
     const count = await instance.methods.getCounter().call();
     assert.equal(count, 1);
   }).timeout(5000);
+
+  it ('should get confidential getPastLogs logs', async() => {
+    let counterContract = (new web3c(gw)).confidential.Contract(artifact.abi);
+    let instance;
+    try {
+      instance = await counterContract.deploy({
+        data: artifact.bytecode
+      }).send({
+        from: address,
+        gasPrice: '0x3b9aca00',
+        gasLimit: '0x100000'
+      });
+    } catch (e) {
+      assert.fail(e);
+    }
+    await instance.methods.incrementCounter().send({
+      from: address,
+      gasPrice: '0x3b9aca00',
+      gasLimit: '0x100000',
+    });
+    // todo: this should use our confidential getPastLogs implementation
+    let logs = await (new web3c(gw)).eth.getPastLogs({
+      address: instance._address
+    });
+    // todo: assert the logs emitted the number 1
+  }).timeout(5000);
 });

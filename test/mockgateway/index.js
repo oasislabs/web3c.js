@@ -4,6 +4,7 @@ const http = require('http');
 const web3 = require('web3');
 const buffer = require('buffer');
 const nacl = require('tweetnacl');
+const responses = require("./responses");
 const keymanager = require('../../web3c/keymanager');
 const artifact = require('../../demo/example.json');
 
@@ -26,6 +27,7 @@ async function handleRequest (req) {
   let obj = {
     'jsonrpc': '2.0',
     'id': req.id,
+    'result': []
   };
   // Arbitrarily chosen.
   let manager = new keymanager();
@@ -63,8 +65,8 @@ async function handleRequest (req) {
       if (!encdata.startsWith("00707269")) {
         obj.result = "error";
       } else {
-        // send a arbitrary txn receipt.
-        obj.result = "0x000000000000000000000000000000000000000000000000000000000000000d";
+        // send a arbitrary txn hash.
+        obj.result = responses.CONFIDENTIAL_DEPLOY_TX_HASH;
       }
     } else {
       // Transact
@@ -77,14 +79,10 @@ async function handleRequest (req) {
       }
     }
   } else if (req.method == 'eth_getTransactionReceipt') {
-    if (req.params[0] == "0x000000000000000000000000000000000000000000000000000000000000000d") {
-      // 2nd part of deployment.
-      obj.result = {
-        "blockHash": 1,
-        "contractAddress": "0x62f5dffcb1C45133c670C7786cD94B75D69F09e1"
-      };
+    if (req.params[0] == responses.CONFIDENTIAL_DEPLOY_TX_HASH) {
+      obj.result = responses.CONFIDENTIAL_DEPLOY_TX_RECEIPT;
     } else if (req.params[0] == "0x000000000000000000000000000000000000000000000000000000000000000e") {
-      //txn call
+      // txn call
       obj.result = {
         "transactionHash": "0x2",
         "transactionIndex": "0x1",
@@ -98,6 +96,10 @@ async function handleRequest (req) {
     }
   } else if (req.method == 'eth_getCode') {
     obj.result = artifact.bytecode;
+  } else if (req.method == 'eth_getPastLogs') {
+	if (req.params[0] === responses.CONFIDENTIAL_GET_PAST_LOGS.address) {
+	  obj.result = responses.CONFIDENTIAL_GET_PAST_LOGS;
+	}
   }
 
   return obj;
