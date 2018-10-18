@@ -41,6 +41,10 @@ ConfidentialProvider.send = function confidentialSend (payload, callback) {
     transform.ethSendTransaction(payload, callback);
   } else if (payload.method == 'eth_call') {
     transform.ethCall(payload, callback);
+  } else if (payload.method == 'eth_getLogs') {
+    transform.ethLogs(payload, callback);
+  } else if (payload.method == 'eth_getTransactionReceipt') {
+    transform.ethTransactionReciept(payload, callback);
   } else {
     const provider = this.manager.provider;
     return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
@@ -76,7 +80,38 @@ class ConfidentialSendTransform {
     });
   }
 
-  // TODO: get call data signed by the user wallet
+  async tryDecryptLogs(logs) {
+    for (let i = 0; i < logs.length; i++) {
+      try {
+        let plain = await this.keymanager.decrypt(logs[i].data);
+        logs[i].data = plain;
+      } catch (e) {
+        // not a log for us.
+      }
+    }
+    return logs;
+  }
+
+  ethLogs(payload, callback) {
+    return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, async (err, res) => {
+      if (!err) {
+        res.result = await this.tryDecryptLogs(res.result);
+      }
+      callback(err, res);
+    });
+  }
+
+  ethTransactionReciept(payload, callback) {
+    return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, async (err, res) => {
+      if (!err && res.result && res.result.logs && res.result.logs.lenght) {
+        res.result.logs = await this.tryDecryptLogs(res.result.logs);
+      }
+      callback(err, res);
+    });
+  }
+
+  //TODO: eth_getFilterChanges, eth_getFilterLogs
+
   ethCall(payload, callback) {
     const tx = payload.params[0];
     this.encryptTx(tx, (err) => {

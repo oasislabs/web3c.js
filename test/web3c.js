@@ -77,7 +77,8 @@ describe('Web3', () => {
   }).timeout(5000);
 
   it ('should get confidential getPastLogs logs', async() => {
-    let counterContract = (new web3c(gw)).confidential.Contract(artifact.abi);
+    let client = new web3c(gw);
+    let counterContract = client.confidential.Contract(artifact.abi);
     let instance;
     try {
       instance = await counterContract.deploy({
@@ -95,10 +96,10 @@ describe('Web3', () => {
       gasPrice: '0x3b9aca00',
       gasLimit: '0x100000',
     });
-    // todo: this should use our confidential getPastLogs implementation
-    let logs = await (new web3c(gw)).eth.getPastLogs({
-      address: instance._address
-    });
-    // todo: assert the logs emitted the number 1
+
+    let logs = await instance.getPastEvents();
+    assert.equal(logs.length, 1);
+    // since the client will use a different ephemeral key each time, it
+    // won't be able to decrypt previous logs.
   }).timeout(5000);
 });
