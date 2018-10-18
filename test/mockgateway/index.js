@@ -96,10 +96,10 @@ async function handleRequest (req) {
     }
   } else if (req.method == 'eth_getCode') {
     obj.result = artifact.bytecode;
-  } else if (req.method == 'eth_getPastLogs') {
-	if (req.params[0] === responses.CONFIDENTIAL_GET_PAST_LOGS.address) {
-	  obj.result = responses.CONFIDENTIAL_GET_PAST_LOGS;
-	}
+  } else if (req.method == 'eth_getLogs') {
+    if (req.params[0].address === responses.CONFIDENTIAL_GET_PAST_LOGS[0].address) {
+      obj.result = responses.CONFIDENTIAL_GET_PAST_LOGS;
+    }
   }
 
   return obj;

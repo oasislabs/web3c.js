@@ -21,11 +21,24 @@ const Confidential = function (web3) {
     let c = new web3.eth.Contract(abi, address, options);
     c.setProvider(confidentialShim);
 
+    let keymanager = this.keyManager;
+    let boundEvent = c._decodeEventABI;
+    c._decodeEventABI = function (data) {
+      if (data.logIndex == 0 && data.topics &&
+          data.topics[0] == '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff') {
+        keymanager.add(data.address, data.data);
+      } else {
+        // decoding happens at requet manager.
+      }
+      return boundEvent.call(c, data);
+    };
+
     // hook to ensure deployed contracts retain the confidential provider.
     let boundClone = c.clone.bind(c);
     c.clone = () => {
       let cloned = boundClone();
       cloned.setProvider(confidentialShim);
+      cloned._decodeEventABI = c._decodeEventABI;
       return cloned;
     };
 
