@@ -37,6 +37,15 @@ describe('Web3', () => {
     assert.equal(64 + 2, key.key.length);
   });
 
+  it('should support transient contracts with separate key state', async () => {
+    let firstContract = (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});    
+    let secondContract = (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
+
+    let firstKey = firstContract.currentProvider.keymanager.getPublicKey();
+    let secondKey = secondContract.currentProvider.keymanager.getPublicKey();
+    assert.notEqual(firstKey, secondKey);
+  });
+
   it('should deploy a confidential counter contract', async () => {
     let counterContract = (new web3c(gw)).confidential.Contract(artifact.abi);
     try {

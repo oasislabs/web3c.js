@@ -7,56 +7,56 @@ const CONFIDENTIAL_PREFIX = '00707269';
  * ConfidentialProvider resolves calls from a Web3.eth.Contract, in particular
  * `eth_sendTransaction` and `eth_call`, and transforms them into confidential
  * transactions and calls.
- * @param keymanager KeyManager The key manager holding the local keypair and
- *     tracking keypair information about the remote contract.
- * @param internalManager web3.RequestManager The underlying manager for sending
- *     transactiosn to a web3 gateway.
  */
-function ConfidentialProvider (keymanager, internalManager) {
-  let outstanding = [];
-  return {
-    send: ConfidentialProvider.send.bind({
-      keymanager: keymanager,
-      outstanding: outstanding,
-      manager: internalManager,
-    }),
-    sendBatch: ConfidentialProvider.sendBatch.bind({
-      keymanager: keymanager,
-      manager: internalManager,
-    }),
-    addSubscription: internalManager.addSubscription.bind(internalManager),
-    removeSubscription: internalManager.removeSubscription.bind(internalManager),
-    clearSubscriptions: internalManager.clearSubscriptions.bind(internalManager),
-  };
+class ConfidentialProvider {
+  /**
+   * Create a new confidential provider.
+   * @param {KeyManager} keymanager The key manager holding the local keypair and
+   *     tracking keypair information about the remote contract.
+   * @param {web3.RequestManager} internalManager The underlying manager for sending
+   *     transactiosn to a web3 gateway.
+   */
+  constructor(keymanager, internalManager) {
+    this.outstanding = [];
+    this.keymanager = keymanager;
+    this.manager = internalManager;
+    this.addSubscription = internalManager.addSubscription.bind(internalManager);
+    this.removeSubscription = internalManager.removeSubscription.bind(internalManager);
+    this.clearSubscriptions = internalManager.clearSubscriptions.bind(internalManager);
+  }
+
+  /**
+   * send will take calls from a web3 component, wrap them in a secure channel,
+   * and pass them to the underlying inernalManager.
+   * @param payload Object The web3 call payload.
+   * @param callback Function The function to call with the result.
+   */
+  send(payload, callback) {
+    let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager);
+    if (payload.method === 'eth_sendTransaction') {
+      transform.ethSendTransaction(payload, callback, this.outstanding);
+    }
+    else if (payload.method == 'eth_call') {
+      transform.ethCall(payload, callback);
+    }
+    else if (payload.method == 'eth_getLogs') {
+      transform.ethLogs(payload, callback);
+    }
+    else if (payload.method == 'eth_getTransactionReceipt') {
+      transform.ethTransactionReciept(payload, callback, this.outstanding);
+    }
+    else {
+      const provider = this.manager.provider;
+      return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+    }
+  }
+  sendBatch(data, callback) {
+    // TODO
+    return this.manager.sendBatch(data, callback);
+  }
 }
 
-/**
- * send will take calls from a web3 component, wrap them in a secure channel,
- * and pass them to the underlying inernalManager.
- * @param payload Object The web3 call payload.
- * @param callback Function The function to call with the result.
- */
-ConfidentialProvider.send = function confidentialSend (payload, callback) {
-  let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager);
 
-  if (payload.method === 'eth_sendTransaction') {
-    transform.ethSendTransaction(payload, callback, this.outstanding);
-  } else if (payload.method == 'eth_call') {
-    transform.ethCall(payload, callback);
-  } else if (payload.method == 'eth_getLogs') {
-    transform.ethLogs(payload, callback);
-  } else if (payload.method == 'eth_getTransactionReceipt') {
-    transform.ethTransactionReciept(payload, callback, this.outstanding);
-  } else {
-    const provider = this.manager.provider;
-    return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
-  }
-};
-
-ConfidentialProvider.sendBatch = function confidentialSendBatch (data, callback) {
-  // TODO
-  return this.manager.sendBatch(data, callback);
-};
 
 /**
  * Wrap transactions in a confidential channel.

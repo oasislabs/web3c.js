@@ -8,16 +8,19 @@ const LOCAL_KEY = 'me';
  * Keymanager tracks contract keys. It also is responsible for refreshing
  * short-term contract keys as needed through an underlying web3c interface.
  * @param {Web3} web3 The wrapped web3 object for making gateway requests.
- * @param {bool} useStorage Whether learned keys should be attempted to be stored.
+ * @param {String?} storage Where state should be attempted to be stored.
  */
 class KeyManager {
-  constructor(web3, useStorage) {
-    if (useStorage && typeof localStorage !== 'undefined' && localStorage !== null) {
+  constructor(web3, storage) {
+    if (storage && typeof localStorage !== 'undefined' && localStorage !== null) {
       this._db = localStorage;
+    // Note: the dependency on node-localstorage below is removed from the
+    // webpack compiled version of the library, which will be running in a
+    // browser context.
     /* develblock:start */
-    } else if (useStorage) {
+    } else if (storage) {
       //TODO: allow setting storage location.
-      this._db = new require('node-localstorage').LocalStorage('.web3c');
+      this._db = new require('node-localstorage').LocalStorage(storage);
     /* develblock:end */
     } else {
       this._db = new Map();
@@ -37,7 +40,7 @@ class KeyManager {
     if (address == LOCAL_KEY) {
       throw new Error('invalid contract address');
     }
-    if (this._db.getItem(address) !== undefined &&
+    if (this._db.getItem(address) &&
         JSON.parse(this._db.getItem(address)).longterm !== key) {
       throw new Error('refusing to change longterm key for address');
     }
@@ -79,6 +82,13 @@ class KeyManager {
   }
 
   /**
+   * Reset state and flush keys.
+   */
+  reset() {
+    this._db.clear();
+  }
+
+  /**
    * Track short term keys in responses to requests made in `get`.
    * @param {String} address EthHex the address of the contract
    * @param {Function} cb The continuation to call on completion with error or key.
@@ -108,7 +118,7 @@ class KeyManager {
   }
 
   /**
-   * Get the lcoal keypair for the client.
+   * Get the local keypair for the client.
    * @private
    * @returns {Object} the local keypair.
    */
