@@ -8,7 +8,7 @@ describe('Key Manager', function() {
     let km2 = new keymanager();
     km2.getSecretKey();
 
-    let pubkey = km2.publicKey.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+    let pubkey = km2.getPublicKey();
 
     let cyphertext = await km1.encrypt("0x1234abcdef", pubkey);
 

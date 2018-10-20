@@ -17,6 +17,16 @@ const Confidential = function (web3) {
     method.attachToObject(this);
   });
 
+  /**
+   * web3.confidential.Contract behaves like web3.eth.Contract, except that
+   * because of the object `this` binding, developers don't use `new` when
+   * instantiating a confidential contract.
+   * @param {Object} abi 
+   * @param {String} address 
+   * @param {Object} options
+   * @param {String} options.key The longterm key of the contract.
+   * @param {bool}   options.saveSession false to disable storing keys.
+   */
   this.Contract = (abi, address, options) => {
     let c = new web3.eth.Contract(abi, address, options);
     c.setProvider(confidentialShim);
@@ -28,7 +38,7 @@ const Confidential = function (web3) {
           data.topics[0] == '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff') {
         keymanager.add(data.address, data.data);
       } else {
-        // decoding happens at requet manager.
+        // decoding happens at request manager.
       }
       return boundEvent.call(c, data);
     };
