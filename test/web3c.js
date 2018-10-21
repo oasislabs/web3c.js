@@ -12,6 +12,11 @@ describe('Web3', () => {
   if (process && process.env && process.env.MNEMONIC) {
     gw = new HDWalletProvider(process.env.MNEMONIC, process.env.GATEWAY);
     address = Object.keys(gw.wallets)[0];
+    // need to stop the provider from polling eth_getBlockNumber so that the
+    // tests can end
+    after(() => {
+      gw.engine.stop();
+    });
   } else if (process && process.env && process.env.GATEWAY) {
     gw = new web3.providers.HttpProvider(process.env.GATEWAY);
     // todo: get address from wallet.
