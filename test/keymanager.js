@@ -3,9 +3,9 @@ const keymanager = require('../web3c/keymanager');
 
 describe('Key Manager', function() {
   it('can encrypt and decrypt', async function() {
-    let km1 = new keymanager(null, false);
+    let km1 = new keymanager(null, undefined);
     km1.getSecretKey();
-    let km2 = new keymanager(null, false);
+    let km2 = new keymanager(null, undefined);
     km2.getSecretKey();
 
     let pubkey = km2.getPublicKey();

@@ -33,7 +33,7 @@ const Confidential = function (web3) {
 
     let keymanager = this.keyManager;
     if (options && options.saveSession === false) {
-      keymanager = new KeyManager(web3, false);
+      keymanager = new KeyManager(web3, undefined);
       instanceProvider = new ConfidentialProvider(keymanager, web3._requestManager);
     }
 

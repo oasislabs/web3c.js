@@ -8,7 +8,7 @@ const LOCAL_KEY = 'me';
  * Keymanager tracks contract keys. It also is responsible for refreshing
  * short-term contract keys as needed through an underlying web3c interface.
  * @param {Web3} web3 The wrapped web3 object for making gateway requests.
- * @param {String?} storage Where state should be attempted to be stored.
+ * @param {String} storage Where state should be attempted to be stored.
  */
 class KeyManager {
   constructor(web3, storage) {
@@ -18,7 +18,7 @@ class KeyManager {
     // webpack compiled version of the library, which will be running in a
     // browser context.
     /* develblock:start */
-    } else if (storage) {
+    } else if (storage !== undefined) {
       //TODO: allow setting storage location.
       this._db = new require('node-localstorage').LocalStorage(storage);
     /* develblock:end */
