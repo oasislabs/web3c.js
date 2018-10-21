@@ -2,9 +2,7 @@
 // Uses a fixed key for operations.
 const http = require('http');
 const web3 = require('web3');
-const buffer = require('buffer');
-const nacl = require('tweetnacl');
-const responses = require("./responses");
+const responses = require('./responses');
 const keymanager = require('../../web3c/keymanager');
 const artifact = require('../../demo/example.json');
 
@@ -16,8 +14,8 @@ const onReq = function (req, res) {
   req.on('end', () => {
     let jsonreq = JSON.parse(body);
     res.writeHead(200, {
-        'Content-Type': 'text/json',
-        'Access-Control-Allow-Origin': '*',
+      'Content-Type': 'text/json',
+      'Access-Control-Allow-Origin': '*',
     });
     handleRequest(jsonreq).then(resp => res.end(JSON.stringify(resp)));
   });
@@ -48,13 +46,13 @@ async function handleRequest (req) {
     let pubKeyStart = 2 + 32;
     let pubKeyEnd = pubKeyStart + 64;
     if (encdata.length < pubKeyEnd) {
-      throw "invalid confidential_call_enc data field";
+      throw 'invalid confidential_call_enc data field';
     }
     let pubKey = encdata.substring(pubKeyStart, pubKeyEnd);
     obj.result = await manager.encrypt('0x0000000000000000000000000000000000000000000000000000000000000001', pubKey);
   } else if (req.method == 'eth_sendTransaction') {
     let encdata = req.params[0].data;
-    if (encdata.startsWith("0x")) {
+    if (encdata.startsWith('0x')) {
       encdata = encdata.substr(2);
     }
     // remove 0x + pri before decrypting
@@ -62,8 +60,8 @@ async function handleRequest (req) {
     // Deploy.
     if (!req.params[0].to) {
       // "\0pri"
-      if (!encdata.startsWith("00707269")) {
-        obj.result = "error";
+      if (!encdata.startsWith('00707269')) {
+        obj.result = 'error';
       } else {
         // send a arbitrary txn hash.
         obj.result = responses.CONFIDENTIAL_DEPLOY_TX_HASH;
@@ -71,27 +69,25 @@ async function handleRequest (req) {
     } else {
       // Transact
       try {
-        let plaindata = await manager.decrypt(encdata);
-        obj.result = "0x000000000000000000000000000000000000000000000000000000000000000e";
+        await manager.decrypt(encdata);
+        obj.result = '0x000000000000000000000000000000000000000000000000000000000000000e';
       } catch (e) {
-        console.warn('unable to decrypt:', e);
-        obj.result = "error";
+        obj.result = 'error' + e;
       }
     }
   } else if (req.method == 'eth_getTransactionReceipt') {
     if (req.params[0] == responses.CONFIDENTIAL_DEPLOY_TX_HASH) {
       obj.result = responses.CONFIDENTIAL_DEPLOY_TX_RECEIPT;
-    } else if (req.params[0] == "0x000000000000000000000000000000000000000000000000000000000000000e") {
+    } else if (req.params[0] == '0x000000000000000000000000000000000000000000000000000000000000000e') {
       // txn call
       obj.result = {
-        "transactionHash": "0x2",
-        "transactionIndex": "0x1",
-        "blockHash": "0x2",
-        "blockNumber": "0x2",
-        "contractAddress": null,
-        "logs": [],
-        "blockHash": 1,
-        "status": "0x1",
+        'transactionHash': '0x2',
+        'transactionIndex': '0x1',
+        'blockHash': '0x2',
+        'blockNumber': '0x2',
+        'contractAddress': null,
+        'logs': [],
+        'status': '0x1',
       };
     }
   } else if (req.method == 'eth_getCode') {
