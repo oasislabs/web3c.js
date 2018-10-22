@@ -1,3 +1,4 @@
+/* globals describe,it */
 const assert = require('assert');
 const nacl = require('tweetnacl');
 const mraeBox = require('../crypto/node/mrae_box');
@@ -29,6 +30,6 @@ describe('MraeBox', function() {
     let ciphertext = await mraeBox.Seal(nonce, msg, aad, alice.publicKey, bob.secretKey);
     let recovered = await mraeBox.Open(nonce, ciphertext, aad, bob.publicKey, alice.secretKey);
 
-    assert.deepEqual(msg, recovered, "roundtrip of seal/open failed.");
+    assert.deepEqual(msg, recovered, 'roundtrip of seal/open failed.');
   });
 });

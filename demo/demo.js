@@ -1,8 +1,11 @@
+/* eslint-disable no-console */
+/* globals Web3c */
+
 // interactivity for the demo page.
 window.addEventListener('load', function () {
   // fill in example contract data as defaults
   let xobj = new XMLHttpRequest();
-  xobj.overrideMimeType("application/json");
+  xobj.overrideMimeType('application/json');
   xobj.open('GET', 'example.json', true);
   xobj.onreadystatechange = () => {
     // when loaded.
@@ -104,7 +107,7 @@ function onContractFormSubmit (ev) {
   let address = form.contract_address.value;
   let key = form.contract_key.value || undefined;
   if (key) {
-    key = {"key": key};
+    key = {'key': key};
   }
 
   let webc = new Web3c(getProvider());
@@ -145,9 +148,9 @@ function onDeployFormSubmit (ev) {
 
 function buildMethodForms () {
   let root = document.getElementById('contract_methods');
-  root.innerHTML = "";
+  root.innerHTML = '';
   currentContract._jsonInterface.forEach((method) => {
-    if (method.type !== "function") {
+    if (method.type !== 'function') {
       return;
     }
     let form = document.createElement('form');
