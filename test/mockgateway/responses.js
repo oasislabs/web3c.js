@@ -7,7 +7,7 @@ const CONFIDENTIAL_DEPLOY_TX_RECEIPT = {
   gasUsed: '0x11577',
   logs: [
 	{
-	  address: '0x5b064f279ab3f4f0b8f7b03395968d29e9ef875c',
+	  address: '0x5e0c135583ad36933ec1b36e8d034b15b747dd2e',
 	  blockHash: '0x3640f09fc74d999ef2487effff4a62371229cfad6cb9502e34d67cf57cc49e2a',
 	  blockNumber: '0x40',
 	  // long term public key for the confidential contract

@@ -62,6 +62,7 @@ typings/
 
 # webpack generated output
 output/
+.web3c/
 
 # contract artifacts
 test/build/*

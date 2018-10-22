@@ -7,54 +7,56 @@ const CONFIDENTIAL_PREFIX = '00707269';
  * ConfidentialProvider resolves calls from a Web3.eth.Contract, in particular
  * `eth_sendTransaction` and `eth_call`, and transforms them into confidential
  * transactions and calls.
- * @param keymanager KeyManager The key manager holding the local keypair and
- *     tracking keypair information about the remote contract.
- * @param internalManager web3.RequestManager The underlying manager for sending
- *     transactiosn to a web3 gateway.
  */
-function ConfidentialProvider (keymanager, internalManager) {
-  return {
-    send: ConfidentialProvider.send.bind({
-      keymanager: keymanager,
-      manager: internalManager,
-    }),
-    sendBatch: ConfidentialProvider.sendBatch.bind({
-      keymanager: keymanager,
-      manager: internalManager,
-    }),
-    addSubscription: internalManager.addSubscription.bind(internalManager),
-    removeSubscription: internalManager.removeSubscription.bind(internalManager),
-    clearSubscriptions: internalManager.clearSubscriptions.bind(internalManager),
-  };
+class ConfidentialProvider {
+  /**
+   * Create a new confidential provider.
+   * @param {KeyManager} keymanager The key manager holding the local keypair and
+   *     tracking keypair information about the remote contract.
+   * @param {web3.RequestManager} internalManager The underlying manager for sending
+   *     transactiosn to a web3 gateway.
+   */
+  constructor(keymanager, internalManager) {
+    this.outstanding = [];
+    this.keymanager = keymanager;
+    this.manager = internalManager;
+    this.addSubscription = internalManager.addSubscription.bind(internalManager);
+    this.removeSubscription = internalManager.removeSubscription.bind(internalManager);
+    this.clearSubscriptions = internalManager.clearSubscriptions.bind(internalManager);
+  }
+
+  /**
+   * send will take calls from a web3 component, wrap them in a secure channel,
+   * and pass them to the underlying inernalManager.
+   * @param payload Object The web3 call payload.
+   * @param callback Function The function to call with the result.
+   */
+  send(payload, callback) {
+    let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager);
+    if (payload.method === 'eth_sendTransaction') {
+      transform.ethSendTransaction(payload, callback, this.outstanding);
+    }
+    else if (payload.method == 'eth_call') {
+      transform.ethCall(payload, callback);
+    }
+    else if (payload.method == 'eth_getLogs') {
+      transform.ethLogs(payload, callback);
+    }
+    else if (payload.method == 'eth_getTransactionReceipt') {
+      transform.ethTransactionReciept(payload, callback, this.outstanding);
+    }
+    else {
+      const provider = this.manager.provider;
+      return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+    }
+  }
+  sendBatch(data, callback) {
+    // TODO
+    return this.manager.sendBatch(data, callback);
+  }
 }
 
-/**
- * send will take calls from a web3 component, wrap them in a secure channel,
- * and pass them to the underlying inernalManager.
- * @param payload Object The web3 call payload.
- * @param callback Function The function to call with the result.
- */
-ConfidentialProvider.send = function confidentialSend (payload, callback) {
-  let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager);
 
-  if (payload.method === 'eth_sendTransaction') {
-    transform.ethSendTransaction(payload, callback);
-  } else if (payload.method == 'eth_call') {
-    transform.ethCall(payload, callback);
-  } else if (payload.method == 'eth_getLogs') {
-    transform.ethLogs(payload, callback);
-  } else if (payload.method == 'eth_getTransactionReceipt') {
-    transform.ethTransactionReciept(payload, callback);
-  } else {
-    const provider = this.manager.provider;
-    return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
-  }
-};
-
-ConfidentialProvider.sendBatch = function confidentialSendBatch (data, callback) {
-  // TODO
-  return this.manager.sendBatch(data, callback);
-};
 
 /**
  * Wrap transactions in a confidential channel.
@@ -65,12 +67,18 @@ class ConfidentialSendTransform {
     this.keymanager = keymanager;
   }
 
-  ethSendTransaction(payload, callback) {
+  ethSendTransaction(payload, callback, outstanding) {
     const tx = payload.params[0];
     if (!tx.to) {
       // deploy transaction doesn't encrypt anything for v0.5
       tx.data = this.prependConfidential(tx.data);
-      return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+      return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, res) => {
+        if (!err) {
+          // track deploy txn receipts to trust them in transaction receipts.
+          outstanding.push(res.result);
+        }
+        callback(err, res);
+      });
     }
     this.encryptTx(tx, (err) => {
       if (err) {
@@ -80,13 +88,24 @@ class ConfidentialSendTransform {
     });
   }
 
-  async tryDecryptLogs(logs) {
+  /**
+   * 
+   * @param {Array} logs The Eth logs to trial decrypt
+   * @param {bool} tryAdd Look for longterm contract deploy keys to add to
+   *     to the key manager.
+   */
+  async tryDecryptLogs(logs, tryAdd) {
     for (let i = 0; i < logs.length; i++) {
-      try {
-        let plain = await this.keymanager.decrypt(logs[i].data);
-        logs[i].data = plain;
-      } catch (e) {
-        // not a log for us.
+      if (tryAdd && logs[i].logIndex == 0 && logs[i].topics &&
+          logs[i].topics[0] == '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff') {
+        this.keymanager.add(logs[i].address, logs[i].data);
+      } else {
+        try {
+          let plain = await this.keymanager.decrypt(logs[i].data);
+          logs[i].data = plain;
+        } catch (e) {
+          // not a log for us.
+        }
       }
     }
     return logs;
@@ -95,16 +114,17 @@ class ConfidentialSendTransform {
   ethLogs(payload, callback) {
     return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, async (err, res) => {
       if (!err) {
-        res.result = await this.tryDecryptLogs(res.result);
+        res.result = await this.tryDecryptLogs(res.result, false);
       }
       callback(err, res);
     });
   }
 
-  ethTransactionReciept(payload, callback) {
+  ethTransactionReciept(payload, callback, outstanding) {
+    let tryAdd = outstanding.indexOf(payload.params[0]) > -1;
     return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, async (err, res) => {
-      if (!err && res.result && res.result.logs && res.result.logs.lenght) {
-        res.result.logs = await this.tryDecryptLogs(res.result.logs);
+      if (!err && res.result && res.result.logs && res.result.logs.length) {
+        res.result.logs = await this.tryDecryptLogs(res.result.logs, tryAdd);
       }
       callback(err, res);
     });

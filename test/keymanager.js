@@ -3,12 +3,12 @@ const keymanager = require('../web3c/keymanager');
 
 describe('Key Manager', function() {
   it('can encrypt and decrypt', async function() {
-    let km1 = new keymanager();
+    let km1 = new keymanager(null, undefined);
     km1.getSecretKey();
-    let km2 = new keymanager();
+    let km2 = new keymanager(null, undefined);
     km2.getSecretKey();
 
-    let pubkey = km2.publicKey.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '0x');
+    let pubkey = km2.getPublicKey();
 
     let cyphertext = await km1.encrypt("0x1234abcdef", pubkey);
 
