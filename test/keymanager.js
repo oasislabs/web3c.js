@@ -1,3 +1,4 @@
+/* globals describe,it */
 const assert = require('assert');
 const keymanager = require('../web3c/keymanager');
 const MraeBox = require('../crypto/node/mrae_box');
@@ -11,9 +12,9 @@ describe('Key Manager', function() {
 
     let pubkey = km2.getPublicKey();
 
-    let cyphertext = await km1.encrypt("0x1234abcdef", pubkey);
+    let cyphertext = await km1.encrypt('0x1234abcdef', pubkey);
 
     let recover = await km2.decrypt(cyphertext);
-    assert.equal("0x1234abcdef", recover);
+    assert.equal('0x1234abcdef', recover);
   });
 });

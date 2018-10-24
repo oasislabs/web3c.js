@@ -1,3 +1,4 @@
+/* globals describe,it,before,after */
 const assert = require('assert');
 const web3 = require('web3');
 const web3c = require('../');
@@ -9,6 +10,8 @@ describe('Web3', () => {
 
   let gw;
   let address;
+  const TIMEOUT = 5000;
+
   if (process && process.env && process.env.MNEMONIC) {
     gw = new HDWalletProvider(process.env.MNEMONIC, process.env.GATEWAY);
     address = Object.keys(gw.wallets)[0];
@@ -23,11 +26,11 @@ describe('Web3', () => {
   } else {
     let provider = gateway();
     // arbitrarily chosen.
-    address = "0x62f5dffcb1C45133c670C7786cD94B75D69F09e1";
+    address = '0x62f5dffcb1C45133c670C7786cD94B75D69F09e1';
 
     before(function(done) {
       provider.listen(0, () => {
-        gw = new web3.providers.HttpProvider("http://localhost:" + provider.address().port);
+        gw = new web3.providers.HttpProvider('http://localhost:' + provider.address().port);
         done();
       });
     });
@@ -38,23 +41,23 @@ describe('Web3', () => {
 
   it('should retrieve contract keys', async function() {
     let inst = new web3c(gw);
-    let key = await inst.confidential.getPublicKey("0x62f5dffcb1C45133c670C7786cD94B75D69F09e1");
+    let key = await inst.confidential.getPublicKey('0x62f5dffcb1C45133c670C7786cD94B75D69F09e1');
     assert.equal(64 + 2, key.key.length);
-  });
+  }).timeout(TIMEOUT);
 
   it('should support transient contracts with separate key state', async () => {
-    let firstContract = (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});    
+    let firstContract = (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
     let secondContract = (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
 
     let firstKey = firstContract.currentProvider.keymanager.getPublicKey();
     let secondKey = secondContract.currentProvider.keymanager.getPublicKey();
     assert.notEqual(firstKey, secondKey);
-  });
+  }).timeout(TIMEOUT);
 
   it('should deploy a confidential counter contract', async () => {
     let counterContract = (new web3c(gw)).confidential.Contract(artifact.abi);
     try {
-      let counterInstance = await counterContract.deploy({
+      await counterContract.deploy({
         data: artifact.bytecode
       }).send({
         from: address,
@@ -64,7 +67,7 @@ describe('Web3', () => {
     } catch (e) {
       assert.fail(e);
     }
-  });
+  }).timeout(TIMEOUT);
 
   it('should execute transactions and calls', async () => {
     let counterContract = (new web3c(gw)).confidential.Contract(artifact.abi);
@@ -88,7 +91,7 @@ describe('Web3', () => {
     });
     const count = await instance.methods.getCounter().call();
     assert.equal(count, 1);
-  }).timeout(5000);
+  }).timeout(TIMEOUT);
 
   it ('should get confidential getPastLogs logs', async() => {
     let client = new web3c(gw);
@@ -113,7 +116,7 @@ describe('Web3', () => {
 
     let logs = await instance.getPastEvents();
     assert.equal(logs.length, 1);
-    // since the client will use a different ephemeral key each time, it
-    // won't be able to decrypt previous logs.
-  }).timeout(5000);
+    // since the client uses a different ephemeral key each time, it
+    // won't always be able to decode the returned log.
+  }).timeout(TIMEOUT);
 });

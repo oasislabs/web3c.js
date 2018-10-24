@@ -1,3 +1,4 @@
+/* globals describe,it */
 const assert = require('assert');
 const sivCtr = require('../crypto/node/siv_ctr');
 
@@ -34,7 +35,7 @@ describe('SivCtr', function() {
   it('should open data', async function() {
     var ciphertext = await sivCtr.Encrypt(key, nonce, msg, aad);
     var recovered = await sivCtr.Decrypt(key, nonce, ciphertext, aad);
-    assert.deepEqual(msg, recovered, "Failed to open encrypted data");
+    assert.deepEqual(msg, recovered, 'Failed to open encrypted data');
   });
 
   it('should work on test vectors', async function() {
@@ -55,8 +56,8 @@ describe('SivCtr', function() {
       let answerC = new Buffer(answer.Ciphertext, 'base64');
       let answerT = new Buffer(answer.Tag, 'base64');
       assert.equal(ciphertext.length, length + sivCtr.TagSize);
-      assert.deepEqual(ciphertext.slice(0, answerC.length), answerC, "test vector of length " + length);
-      assert.deepEqual(ciphertext.slice(answerC.length, ciphertext.length), answerT, "Test vector tag of length" + length)
+      assert.deepEqual(ciphertext.slice(0, answerC.length), answerC, 'test vector of length ' + length);
+      assert.deepEqual(ciphertext.slice(answerC.length, ciphertext.length), answerT, 'Test vector tag of length' + length)
     }));
   });
 });
