@@ -1,7 +1,7 @@
 /* globals describe,it,before,after */
 const assert = require('assert');
 const web3 = require('web3');
-const web3c = require('../web3c');
+const web3c = require('../');
 const gateway = require('./mockgateway');
 const artifact = require('../demo/example.json');
 const HDWalletProvider = require('truffle-hdwallet-provider');
@@ -42,7 +42,7 @@ describe('Web3', () => {
   it('should retrieve contract keys', async function() {
     let inst = new web3c(gw);
     let key = await inst.confidential.getPublicKey('0x62f5dffcb1C45133c670C7786cD94B75D69F09e1');
-    assert.equal(64 + 2, key.key.length);
+    assert.equal(64 + 2, key.public_key.length);
   }).timeout(TIMEOUT);
 
   it('should support transient contracts with separate key state', async () => {

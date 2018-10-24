@@ -5,8 +5,8 @@
   "main": "index.node.js",
   "module": "index.browser.js",
   "scripts": {
-    "build": "webpack-command --entry ./index.js --output output/web3c.js",
-    "watch": "webpack-command --watch --entry ./index.js --output output/web3c.js",
+    "build": "webpack-command --entry ./index.browser.js --output output/web3c.js",
+    "watch": "webpack-command --watch --entry ./index.browser.js --output output/web3c.js",
     "test": "nyc --reporter=html --reporter=text mocha && npm run-script lint",
     "test:browser": "mocha init output/ && webpack-command --entry ./tests.js --output output/tests.js",
     "test:gateway": "cd test/ && truffle compile && GATEWAY='http://localhost:8545' npm test && cd ../",
@@ -40,8 +40,7 @@
     "truffle-hdwallet-provider": "0.0.6",
     "tweetnacl": "^1.0.0",
     "webpack": "^4.20.2",
-    "webpack-command": "^0.4.1",
-    "webpack-strip-block": "^0.2.0"
+    "webpack-command": "^0.4.1"
   },
   "eslintConfig": {
     "parserOptions": {

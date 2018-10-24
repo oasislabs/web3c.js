@@ -17,12 +17,11 @@ module.exports = {
         ],
         use: [
           'babel-loader',
-          'webpack-strip-block',
         ]
       }
     ]
   },
-  entry: './index',
+  entry: './index.browser',
   resolve: {
     modules: [
       'node_modules',

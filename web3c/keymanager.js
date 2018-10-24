@@ -1,33 +1,26 @@
 // Stores known short and longterm keys for contracts,
 // refreshing + validating short-term keys as needed.
 const nacl = require('tweetnacl');
-const mraeBox = require('../crypto/node/mrae_box');
 const LOCAL_KEY = 'me';
 
 /**
  * Keymanager tracks contract keys. It also is responsible for refreshing
  * short-term contract keys as needed through an underlying web3c interface.
  * @param {Web3} web3 The wrapped web3 object for making gateway requests.
- * @param {String} storage Where state should be attempted to be stored.
+ * @param {localStorage?} storageProvider where Storage should be persisted.
+ * @param {MraeBox} mraeBox The class used to perform mrae encryption.
  */
 class KeyManager {
-  constructor(web3, storage) {
-    if (storage && typeof localStorage !== 'undefined' && localStorage !== null) {
-      this._db = localStorage;
-    // Note: the dependency on node-localstorage below is removed from the
-    // webpack compiled version of the library, which will be running in a
-    // browser context.
-    /* develblock:start */
-    } else if (storage !== undefined) {
-      //TODO: allow setting storage location.
-      this._db = new require('node-localstorage').LocalStorage(storage);
-    /* develblock:end */
+  constructor(web3, storageProvider, mraeBox) {
+    if (storageProvider !== undefined) {
+      this._db = storageProvider;
     } else {
       this._db = new Map();
       this._db.getItem = this._db.get;
       this._db.setItem = this._db.set;
     }
     this._web3 = web3;
+    this._mraeBox = mraeBox;
   }
 
   /**
@@ -71,10 +64,10 @@ class KeyManager {
       throw new Error('invalid contract address');
     }
     let data = this._db.getItem(address);
-    if (data !== undefined) {
+    if (data !== undefined && data) {
       data = JSON.parse(data);
       // TODO: check timestamp expiry.
-      if (data.shorterm) {
+      if (data && data.shorterm) {
         return callback(data.shorterm);
       }
     }
@@ -103,18 +96,22 @@ class KeyManager {
     if (address == LOCAL_KEY) {
       throw new Error('invalid contract address');
     }
+    if (typeof response.public_key !== 'string') {
+      response.public_key = toHex(response.public_key);
+    }
+
     let data = this._db.getItem(address);
-    if (data === undefined) {
-      return cb(response.key);
+    if (data === undefined || data == null) {
+      return cb(response.public_key);
     }
     data = JSON.parse(data);
     // TODO: check if response is an error.
     // TODO: validate response signature is from lngterm key.
     // TODO: reformat / parse.
-    data.shortterm = response.key;
+    data.shortterm = response.public_key;
     data.timestamp = response.timestamp;
     this._db.setItem(address, JSON.stringify(data));
-    cb(response.key);
+    cb(response.public_key);
   }
 
   /**
@@ -124,7 +121,7 @@ class KeyManager {
    */
   getLocalKeys() {
     let data = this._db.getItem(LOCAL_KEY);
-    if (data == undefined) {
+    if (data == undefined || data == null) {
       let keypair = nacl.box.keyPair();
       keypair.publicKey = toHex(keypair.publicKey);
       keypair.secretKey = toHex(keypair.secretKey);
@@ -162,7 +159,7 @@ class KeyManager {
     let nonce = nacl.randomBytes(16);
     let msgBytes = parseHex(msg);
     let pubKey = parseHex(this.getPublicKey());
-    let cyphertext = await mraeBox.Seal(nonce, msgBytes, new Uint8Array(), parseHex(key), parseHex(this.getSecretKey()));
+    let cyphertext = await this._mraeBox.Seal(nonce, msgBytes, new Uint8Array(), parseHex(key), parseHex(this.getSecretKey()));
     // prepend nonce, pubkey
     let out = new Uint8Array(nonce.length + pubKey.length + cyphertext.length);
     let i = 0;
@@ -199,7 +196,7 @@ class KeyManager {
     for (; i < cypherBytes.length; i++) {
       msg[i - nonce.length - pubKey.length] = cypherBytes[i];
     }
-    let plaintext = await mraeBox.Open(nonce, msg, new Uint8Array(), pubKey, parseHex(this.getSecretKey()));
+    let plaintext = await this._mraeBox.Open(nonce, msg, new Uint8Array(), pubKey, parseHex(this.getSecretKey()));
     return toHex(plaintext);
   }
 }

@@ -1,12 +1,13 @@
 /* globals describe,it */
 const assert = require('assert');
 const keymanager = require('../web3c/keymanager');
+const MraeBox = require('../crypto/node/mrae_box');
 
 describe('Key Manager', function() {
   it('can encrypt and decrypt', async function() {
-    let km1 = new keymanager(null, undefined);
+    let km1 = new keymanager(null, undefined, MraeBox);
     km1.getSecretKey();
-    let km2 = new keymanager(null, undefined);
+    let km2 = new keymanager(null, undefined, MraeBox);
     km2.getSecretKey();
 
     let pubkey = km2.getPublicKey();

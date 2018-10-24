@@ -2,9 +2,11 @@
 // Uses a fixed key for operations.
 const http = require('http');
 const web3 = require('web3');
+
 const responses = require('./responses');
 const keymanager = require('../../web3c/keymanager');
 const artifact = require('../../demo/example.json');
+const MraeBox = require('../../crypto/node/mrae_box');
 
 const onReq = function (req, res) {
   let body = '';
@@ -28,7 +30,7 @@ async function handleRequest (req) {
     'result': []
   };
   // Arbitrarily chosen.
-  let manager = new keymanager(null, undefined);
+  let manager = new keymanager(null, undefined, MraeBox);
   manager._db.setItem('me', JSON.stringify({
     'secretKey': '0x263357bd55c11524811cccf8c9303e3298dd71abeb1b20f3ea7db07655dba9e9',
     'publicKey': '0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a'
@@ -36,7 +38,7 @@ async function handleRequest (req) {
 
   if (req.method == 'confidential_getPublicKey') {
     obj.result = {
-      'key': '0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a',
+      'public_key': '0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a',
       'timestamp': web3.utils.toHex((new Date()).valueOf()),
       'signature': 0,
     };
