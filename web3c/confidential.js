@@ -9,8 +9,8 @@ const KeyManager = require('./keymanager');
  * and exposes the confidential contract interface by creating a
  * web3.eth.Contract communication through a ConfidentialProvider.
  */
-const Confidential = function (web3) {
-  this.keyManager = new KeyManager(web3, '.web3c');
+const Confidential = function (web3, storage, mraebox) {
+  this.keyManager = new KeyManager(web3, storage, mraebox);
   let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
   Confidential.methods(web3.extend).forEach((method) => {
     method.setRequestManager(web3._requestManager);
@@ -33,7 +33,7 @@ const Confidential = function (web3) {
 
     let keymanager = this.keyManager;
     if (options && options.saveSession === false) {
-      keymanager = new KeyManager(web3, undefined);
+      keymanager = new KeyManager(web3, undefined, mraebox);
       instanceProvider = new ConfidentialProvider(keymanager, web3._requestManager);
     }
 

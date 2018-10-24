@@ -1,6 +1,6 @@
 const assert = require('assert');
 const web3 = require('web3');
-const web3c = require('../web3c');
+const web3c = require('../');
 const gateway = require('./mockgateway');
 const artifact = require('../demo/example.json');
 const HDWalletProvider = require('truffle-hdwallet-provider');

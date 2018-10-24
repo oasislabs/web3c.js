@@ -1,5 +1,6 @@
 /* globals Web3 */
 const Confidential = require('./confidential');
+const MraeBox = require('../crypto/subtle/mrae_box');
 
 let localWeb3 = undefined;
 
@@ -10,7 +11,7 @@ let localWeb3 = undefined;
 module.exports = function (provider) {
   localWeb3.call(this, provider);
   if (this.version && !this.version.api) { // v1.0 series
-    this.confidential = new Confidential(this);
+    this.confidential = new Confidential(this, localStorage, MraeBox);
   } else {
     throw new Error('Unexpected web3 version. Web3c Expects Web3 1.0');
   }
@@ -32,12 +33,4 @@ if (typeof Web3 !== 'undefined' && (new Web3()).version && !(new Web3()).version
   }, function(err) {
     throw err;
   }, 'web3');
-// Option 3: Node or other uncompiled instantiations will directly require the
-// web3 dependency. The `develblock` comment is removed by webpack, allowing
-// its compiler to understand that the dependency is only loaded through a
-// require.ensure and as such should be compiled into a separate module.
-/* develblock:start */
-} else {
-  localWeb3 = require('web3');
-/* develblock:end */
 }
