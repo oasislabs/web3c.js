@@ -64,10 +64,10 @@ class KeyManager {
       throw new Error('invalid contract address');
     }
     let data = this._db.getItem(address);
-    if (data !== undefined) {
+    if (data !== undefined && data) {
       data = JSON.parse(data);
       // TODO: check timestamp expiry.
-      if (data.shorterm) {
+      if (data && data.shorterm) {
         return callback(data.shorterm);
       }
     }
@@ -117,7 +117,7 @@ class KeyManager {
    */
   getLocalKeys() {
     let data = this._db.getItem(LOCAL_KEY);
-    if (data == undefined) {
+    if (data == undefined || data == null) {
       let keypair = nacl.box.keyPair();
       keypair.publicKey = toHex(keypair.publicKey);
       keypair.secretKey = toHex(keypair.secretKey);
