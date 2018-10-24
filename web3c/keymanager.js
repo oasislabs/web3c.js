@@ -96,18 +96,22 @@ class KeyManager {
     if (address == LOCAL_KEY) {
       throw new Error('invalid contract address');
     }
+    if (typeof response.public_key !== 'string') {
+      response.public_key = toHex(response.public_key);
+    }
+
     let data = this._db.getItem(address);
-    if (data === undefined) {
-      return cb(response.key);
+    if (data === undefined || data == null) {
+      return cb(response.public_key);
     }
     data = JSON.parse(data);
     // TODO: check if response is an error.
     // TODO: validate response signature is from lngterm key.
     // TODO: reformat / parse.
-    data.shortterm = response.key;
+    data.shortterm = response.public_key;
     data.timestamp = response.timestamp;
     this._db.setItem(address, JSON.stringify(data));
-    cb(response.key);
+    cb(response.public_key);
   }
 
   /**

@@ -38,7 +38,7 @@ async function handleRequest (req) {
 
   if (req.method == 'confidential_getPublicKey') {
     obj.result = {
-      'key': '0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a',
+      'public_key': '0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a',
       'timestamp': web3.utils.toHex((new Date()).valueOf()),
       'signature': 0,
     };

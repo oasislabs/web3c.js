@@ -42,7 +42,7 @@ describe('Web3', () => {
   it('should retrieve contract keys', async function() {
     let inst = new web3c(gw);
     let key = await inst.confidential.getPublicKey('0x62f5dffcb1C45133c670C7786cD94B75D69F09e1');
-    assert.equal(64 + 2, key.key.length);
+    assert.equal(64 + 2, key.public_key.length);
   }).timeout(TIMEOUT);
 
   it('should support transient contracts with separate key state', async () => {
