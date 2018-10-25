@@ -71,7 +71,7 @@ class ConfidentialSendTransform {
     const tx = payload.params[0];
     if (!tx.to) {
       // deploy transaction doesn't encrypt anything for v0.5
-      tx.data = this.prependConfidential(tx.data);
+      tx.data = this._prependConfidential(tx.data);
       return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, res) => {
         if (!err) {
           // track deploy txn receipts to trust them in transaction receipts.
@@ -89,7 +89,7 @@ class ConfidentialSendTransform {
   }
 
   /**
-   * 
+   *
    * @param {Array} logs The Eth logs to trial decrypt
    * @param {bool} tryAdd Look for longterm contract deploy keys to add to
    *     to the key manager.
@@ -169,8 +169,15 @@ class ConfidentialSendTransform {
     });
   }
 
-  prependConfidential(bytesHex) {
-    return '0x' + CONFIDENTIAL_PREFIX + bytesHex.substr(2);
+  /**
+   * Only prepends the CONFIDENTIAL_PREFIX to the given data if it doesn't already exist.
+   */
+  _prependConfidential(bytesHex) {
+    if (bytesHex.length < CONFIDENTIAL_PREFIX.length ||
+        bytesHex.substr(0, CONFIDENTIAL_PREFIX.length) !== CONFIDENTIAL_PREFIX) {
+      return '0x' + CONFIDENTIAL_PREFIX + bytesHex.substr(2);
+    }
+    return bytesHex;
   }
 }
 
