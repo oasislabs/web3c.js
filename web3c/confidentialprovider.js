@@ -45,6 +45,9 @@ class ConfidentialProvider {
     else if (payload.method == 'eth_getTransactionReceipt') {
       transform.ethTransactionReciept(payload, callback, this.outstanding);
     }
+    else if (payload.method == 'eth_estimateGas') {
+      transform.ethEstimateGas(payload, callback);
+    }
     else {
       const provider = this.manager.provider;
       return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
@@ -67,14 +70,23 @@ class ConfidentialSendTransform {
     this.keymanager = keymanager;
   }
 
+  ethEstimateGas(payload, callback) {
+    return this.ethSendTransaction(payload, callback, undefined);
+  }
+
+  /**
+   * @param {Object} payload The JSON rpc request being intercepted. Contains the transaction.
+   * @param {Function} callback The function to call with the error and result.
+   * @param {Array?} outstanding The collection of deployed transaction hashes.
+   */
   ethSendTransaction(payload, callback, outstanding) {
     const tx = payload.params[0];
     if (!tx.to) {
       // deploy transaction doesn't encrypt anything for v0.5
       tx.data = this._prependConfidential(tx.data);
       return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, res) => {
-        if (!err) {
-          // track deploy txn receipts to trust them in transaction receipts.
+        if (!err && outstanding !== undefined) {
+          // track deploy txn hashes to trust them in transaction receipts.
           outstanding.push(res.result);
         }
         callback(err, res);

@@ -8,6 +8,8 @@ const keymanager = require('../../web3c/keymanager');
 const artifact = require('../../demo/example.json');
 const MraeBox = require('../../crypto/node/mrae_box');
 
+const CONFIDENTIAL_PREFIX = '00707269';
+
 const onReq = function (req, res) {
   let body = '';
   req.on('data', chunk => {
@@ -62,7 +64,7 @@ async function handleRequest (req) {
     // Deploy.
     if (!req.params[0].to) {
       // "\0pri"
-      if (!encdata.startsWith('00707269')) {
+      if (!encdata.startsWith(CONFIDENTIAL_PREFIX)) {
         obj.result = 'error';
       } else {
         // send a arbitrary txn hash.
@@ -97,6 +99,12 @@ async function handleRequest (req) {
   } else if (req.method == 'eth_getLogs') {
     if (req.params[0].address === responses.CONFIDENTIAL_GET_PAST_LOGS[0].address) {
       obj.result = responses.CONFIDENTIAL_GET_PAST_LOGS;
+    }
+  } else if (req.method == 'eth_estimateGas') {
+    if (req.params[0].data.startsWith('0x' + CONFIDENTIAL_PREFIX)) {
+      obj.result = '0xe1bd';
+    } else {
+      obj.result = '0xe185';
     }
   }
 
