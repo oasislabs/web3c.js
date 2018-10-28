@@ -3,8 +3,8 @@ const CONFIDENTIAL_DEPLOY_TX_RECEIPT = {
   blockHash: '0xe480f8da480d04f7944b24bc12d19243c1979e83004451f868117cea29fb3bf1',
   blockNumber: '0x32',
   contractAddress: '0x5e0c135583ad36933ec1b36e8d034b15b747dd2e',
-  cumulativeGasUsed: '0x11577',
-  gasUsed: '0x11577',
+  cumulativeGasUsed: '0xe1bd',
+  gasUsed: '0xe1bd',
   logs: [
     {
       address: '0x5e0c135583ad36933ec1b36e8d034b15b747dd2e',
