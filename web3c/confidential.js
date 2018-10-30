@@ -1,6 +1,6 @@
 // This file provides the "web3.confidential" exported interface
-const ConfidentialProvider = require('./confidentialprovider');
-const KeyManager = require('./keymanager');
+const ConfidentialProvider = require('./confidential_provider');
+const KeyManager = require('./key_manager');
 
 /**
  * Confidential
@@ -21,8 +21,8 @@ const Confidential = function (web3, storage, mraebox) {
    * web3.confidential.Contract behaves like web3.eth.Contract, except that
    * because of the object `this` binding, developers don't use `new` when
    * instantiating a confidential contract.
-   * @param {Object} abi 
-   * @param {String} address 
+   * @param {Object} abi
+   * @param {String} address
    * @param {Object} options
    * @param {String} options.key The longterm key of the contract.
    * @param {bool}   options.saveSession false to disable storing keys.
