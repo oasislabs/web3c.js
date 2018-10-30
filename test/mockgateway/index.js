@@ -4,7 +4,7 @@ const http = require('http');
 const web3 = require('web3');
 
 const responses = require('./responses');
-const keymanager = require('../../web3c/keymanager');
+const keymanager = require('../../web3c/key_manager');
 const artifact = require('../../demo/example.json');
 const MraeBox = require('../../crypto/node/mrae_box');
 

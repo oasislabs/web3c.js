@@ -1,6 +1,6 @@
 /* globals describe,it */
 const assert = require('assert');
-const keymanager = require('../web3c/keymanager');
+const keymanager = require('../web3c/key_manager');
 const MraeBox = require('../crypto/node/mrae_box');
 
 describe('Key Manager', function() {
