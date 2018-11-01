@@ -109,7 +109,7 @@ class ConfidentialSendTransform {
   async tryDecryptLogs(logs, tryAdd) {
     for (let i = 0; i < logs.length; i++) {
       if (tryAdd && logs[i].logIndex == 0 && logs[i].topics &&
-          logs[i].topics[0] == '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff') {
+          logs[i].topics[0] == '0x' + 'f'.repeat(64)) {
         this.keymanager.add(logs[i].address, logs[i].data);
       } else {
         try {
