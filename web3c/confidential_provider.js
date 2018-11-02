@@ -188,19 +188,19 @@ class ConfidentialSendTransform {
    *
    * Background:
    *
-   * It is an invariant that, if b'\0pri' exists as a prefix to the data field in a
+   * It is an invariant that, if b'\0enc' exists as a prefix to the data field in a
    * CREATE tx, then those four bytes are *not* part of the data field, and are used
    * *only* to tag confidentiality.
    *
    * _prependConfidential is only called if there is no `to` address in the transaction.
    * This means we are forming a CREATE transaction to create a contract. In this case,
-   * it is never the case that b'\0pri' will be a valid prefix to initcode, and this is
+   * it is never the case that b'\0enc' will be a valid prefix to initcode, and this is
    * also the case with WASM contracts (having the four byte prefix b'\0asm'). As a
    * result, we don't need to prepend the prefix a second time, if it already exists. If
    * it exists, we can assume its being used to mark a contract as confidential.
    *
    * Now, one may wonder how or why we would ever receive input that already has the
-   * b'\0pri' prefix. This may happen because we want to support the following features
+   * b'\0enc' prefix. This may happen because we want to support the following features
    * all at the same time:
    *
    * - truffle compile (with confidential prefix automatically added for any files named
@@ -214,7 +214,7 @@ class ConfidentialSendTransform {
    * If we remove this prefix check and always prepend the 4 byte prefix, then web3c.js
    * deploy will break when using our extended truffle compile, because it will have two
    * sets of prefixes--and so the receiving code will strip off one prefix, and then fail
-   * to execute the initcode correctly because it starts with \0pri.
+   * to execute the initcode correctly because it starts with \0enc.
    */
   _prependConfidential(bytesHex) {
     if (!bytesHex.startsWith('0x')) {
@@ -234,4 +234,3 @@ class ConfidentialSendTransform {
 module.exports = ConfidentialProvider;
 // expose for testing
 module.exports.private = { CONFIDENTIAL_PREFIX, ConfidentialSendTransform };
-
