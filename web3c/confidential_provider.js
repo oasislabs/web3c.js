@@ -183,15 +183,23 @@ class ConfidentialSendTransform {
 
   /**
    * Only prepends the CONFIDENTIAL_PREFIX to the given data if it doesn't already exist.
+   * Assumes bytesHex is a hex encoded byte string.
    */
   _prependConfidential(bytesHex) {
-    if (bytesHex.length < CONFIDENTIAL_PREFIX.length ||
-        bytesHex.substr(0, CONFIDENTIAL_PREFIX.length) !== CONFIDENTIAL_PREFIX) {
-      return '0x' + CONFIDENTIAL_PREFIX + bytesHex.substr(2);
+    if (!bytesHex.startsWith('0x')) {
+      return bytesHex;
     }
-    return bytesHex;
+    if (bytesHex.length >= CONFIDENTIAL_PREFIX.length &&
+        bytesHex.substr(2, CONFIDENTIAL_PREFIX.length) === CONFIDENTIAL_PREFIX) {
+      return bytesHex;
+    }
+
+    return '0x' + CONFIDENTIAL_PREFIX + bytesHex.substr(2);
   }
 }
 
+
 module.exports = ConfidentialProvider;
-module.exports.private = { CONFIDENTIAL_PREFIX };
+// expose for testing
+module.exports.private = { CONFIDENTIAL_PREFIX, ConfidentialSendTransform };
+
