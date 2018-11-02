@@ -7,8 +7,7 @@ const responses = require('./responses');
 const keymanager = require('../../web3c/key_manager');
 const artifact = require('../../demo/example.json');
 const MraeBox = require('../../crypto/node/mrae_box');
-
-const CONFIDENTIAL_PREFIX = '00707269';
+const CONFIDENTIAL_PREFIX = require('../../web3c/confidential_provider').private.CONFIDENTIAL_PREFIX;
 
 const onReq = function (req, res) {
   let body = '';
@@ -63,7 +62,7 @@ async function handleRequest (req) {
 
     // Deploy.
     if (!req.params[0].to) {
-      // "\0pri"
+      // "\0enc"
       if (!encdata.startsWith(CONFIDENTIAL_PREFIX)) {
         obj.result = 'error';
       } else {
