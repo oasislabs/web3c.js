@@ -43,7 +43,7 @@ const Confidential = function (web3, storage, mraebox) {
     let boundEvent = c._decodeEventABI;
     c._decodeEventABI = function (data) {
       if (data.logIndex == 0 && data.topics &&
-          data.topics[0] == '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff') {
+          data.topics[0] == '0x' + 'f'.repeat(64)) {
         keymanager.add(data.address, data.data);
       } else {
         // decoding happens in the confidential provider.
