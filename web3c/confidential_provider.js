@@ -1,7 +1,7 @@
 /**
- * Hex representation of b'\0pri'.
+ * Hex representation of b'\0enc'.
  */
-const CONFIDENTIAL_PREFIX = '00707269';
+const CONFIDENTIAL_PREFIX = '00656e63';
 
 /**
  * ConfidentialProvider resolves calls from a Web3.eth.Contract, in particular
@@ -194,3 +194,4 @@ class ConfidentialSendTransform {
 }
 
 module.exports = ConfidentialProvider;
+module.exports.private = { CONFIDENTIAL_PREFIX };
