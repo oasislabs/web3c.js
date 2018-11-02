@@ -189,7 +189,8 @@ class ConfidentialSendTransform {
     if (!bytesHex.startsWith('0x')) {
       return bytesHex;
     }
-    if (bytesHex.length >= CONFIDENTIAL_PREFIX.length &&
+    // + 2 to account for the hex prefix '0x'
+    if (bytesHex.length >= CONFIDENTIAL_PREFIX.length + 2 &&
         bytesHex.substr(2, CONFIDENTIAL_PREFIX.length) === CONFIDENTIAL_PREFIX) {
       return bytesHex;
     }
