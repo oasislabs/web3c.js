@@ -152,12 +152,14 @@ class ConfidentialSendTransform {
       }
       payload.method = 'confidential_call_enc';
       this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
-        if (!resp.result) {
+        if (!resp.result || err) {
           callback(err, resp);
         }
         this.keymanager.decrypt(resp.result).then((plaintext) => {
           resp.result = plaintext;
           callback(err, resp);
+        }).catch((err) => {
+          callback(err, null);
         });
       });
     });

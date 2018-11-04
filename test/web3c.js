@@ -46,16 +46,16 @@ describe('Web3', () => {
   }).timeout(TIMEOUT);
 
   it('should support transient contracts with separate key state', async () => {
-    let firstContract = (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
-    let secondContract = (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
+    let firstContract = new (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
+    let secondContract = new (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
 
-    let firstKey = firstContract.currentProvider.keymanager.getPublicKey();
-    let secondKey = secondContract.currentProvider.keymanager.getPublicKey();
+    let firstKey = firstContract._requestManager.provider.keymanager.getPublicKey();
+    let secondKey = secondContract._requestManager.provider.keymanager.getPublicKey();
     assert.notEqual(firstKey, secondKey);
   }).timeout(TIMEOUT);
 
   it('should deploy a confidential counter contract', async () => {
-    let counterContract = (new web3c(gw)).confidential.Contract(artifact.abi);
+    let counterContract = new (new web3c(gw)).confidential.Contract(artifact.abi);
     try {
       await counterContract.deploy({
         data: artifact.bytecode
@@ -70,7 +70,7 @@ describe('Web3', () => {
   }).timeout(TIMEOUT);
 
   it('should execute transactions and calls', async () => {
-    let counterContract = (new web3c(gw)).confidential.Contract(artifact.abi);
+    let counterContract = new (new web3c(gw)).confidential.Contract(artifact.abi);
     let instance;
     try {
       instance = await counterContract.deploy({
@@ -95,7 +95,7 @@ describe('Web3', () => {
 
   it('should get confidential getPastLogs logs', async () => {
     let client = new web3c(gw);
-    let counterContract = client.confidential.Contract(artifact.abi);
+    let counterContract = new client.confidential.Contract(artifact.abi);
     let instance;
     try {
       instance = await counterContract.deploy({
@@ -123,7 +123,7 @@ describe('Web3', () => {
   it('should estimate gas for confidential transactions the same as gas actually used', async () => {
     const _web3c = (new web3c(gw));
 
-    let counterContract = _web3c.confidential.Contract(artifact.abi);
+    let counterContract = new _web3c.confidential.Contract(artifact.abi);
     const deployMethod = counterContract.deploy({data: artifact.bytecode});
     let estimatedGas = await deployMethod.estimateGas();
     counterContract = await deployMethod.send({
@@ -141,7 +141,7 @@ describe('Web3', () => {
   it('should yield a larger estimate for confidential transactions than non-confidential', async () => {
     const _web3c = (new web3c(gw));
 
-    const confidentialContract = _web3c.confidential.Contract(artifact.abi);
+    const confidentialContract = new _web3c.confidential.Contract(artifact.abi);
     const confidentialDeploy = confidentialContract.deploy({data: artifact.bytecode});
     const confidentialEstimatedGas = await confidentialDeploy.estimateGas();
 

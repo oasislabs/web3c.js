@@ -17,6 +17,7 @@ const Confidential = function (web3, storage, mraebox) {
     method.attachToObject(this);
   });
 
+  let self = this;
   /**
    * web3.confidential.Contract behaves like web3.eth.Contract, except that
    * because of the object `this` binding, developers don't use `new` when
@@ -27,45 +28,49 @@ const Confidential = function (web3, storage, mraebox) {
    * @param {String} options.key The longterm key of the contract.
    * @param {bool}   options.saveSession false to disable storing keys.
    */
-  this.Contract = (abi, address, options) => {
+  this.Contract = function (abi, address, options) {
     let c = new web3.eth.Contract(abi, address, options);
+    // Copy the wrapped contract to `this`.
+    this.__proto__ = c.__proto__;
+    Object.keys(c).forEach((k) => {
+      this[k] = c[k];
+    });
+
     let instanceProvider = provider;
 
-    let keymanager = this.keyManager;
+    let keymanager = self.keyManager;
     if (options && options.saveSession === false) {
       keymanager = new KeyManager(web3, undefined, mraebox);
       instanceProvider = new ConfidentialProvider(keymanager, web3._requestManager);
     }
 
-    c.setProvider(instanceProvider);
+    c.setProvider.call(this, instanceProvider);
 
 
     let boundEvent = c._decodeEventABI;
-    c._decodeEventABI = function (data) {
+    this._decodeEventABI = function (data) {
       if (data.logIndex == 0 && data.topics &&
           data.topics[0] == '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff') {
         keymanager.add(data.address, data.data);
       } else {
         // decoding happens in the confidential provider.
       }
-      return boundEvent.call(c, data);
+      return boundEvent.call(this, data);
     };
 
     // Deployed contracts are instantiated with clone.
     // This patch rebinds the confidential provider, which is otherwise lost.
-    let boundClone = c.clone.bind(c);
-    c.clone = () => {
+    let boundClone = this.clone.bind(this);
+    this.clone = () => {
       let cloned = boundClone();
-      cloned.setProvider(c.currentProvider);
-      cloned._decodeEventABI = c._decodeEventABI;
+      cloned.setProvider(this.currentProvider);
+      cloned._decodeEventABI = this._decodeEventABI;
       return cloned;
     };
 
     if (options && options.key) {
       keymanager.add(address, options.key);
     }
-
-    return c;
   };
 
   this.resetKeyManager = () => {
