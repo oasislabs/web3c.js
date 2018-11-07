@@ -112,7 +112,7 @@ function onContractFormSubmit (ev) {
 
   let webc = new Web3c(getProvider());
   try {
-    currentContract = webc.confidential.Contract(JSON.parse(abi), address, key);
+    currentContract = new webc.confidential.Contract(JSON.parse(abi), address, key);
     buildMethodForms();
   } catch (e) {
     document.getElementById('contract_result').innerHTML = e;
@@ -129,9 +129,15 @@ function onDeployFormSubmit (ev) {
 
   let webc = new Web3c(getProvider());
   try {
-    let contract = webc.confidential.Contract(JSON.parse(abi));
-    webc.eth.getAccounts().then((a) => {
-      return contract.deploy({data: bytecode}).send({from: a[0]});
+    let contract = new webc.confidential.Contract(JSON.parse(abi));
+    webc.eth.getAccounts().then(async (a) => {
+      let deploy = contract.deploy({data: bytecode, arguments: [[]]});
+      let gas = await deploy.estimateGas();
+      return deploy.send({
+        gasPrice: '0x3b9aca00',
+        gas: gas,
+        from: a[0]
+      });
     }).then((c) => {
       currentContract = c;
       buildMethodForms();

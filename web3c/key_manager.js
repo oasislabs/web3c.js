@@ -177,10 +177,13 @@ class KeyManager {
 
   /**
    * Encrypt an EthHex message with the local private key. Rejects on error.
-   * @param {String} msg EthHex the encrypted message
+   * @param {String} cyphertext EthHex the encrypted message
    * @return {String} EthHex The decoded message.
    */
   async decrypt(cyphertext) {
+    if (!cyphertext || cyphertext == '0x') {
+      return cyphertext;
+    }
     let cypherBytes = parseHex(cyphertext);
     // split nonce, pubkey, msg
     let nonce = new Uint8Array(16);
