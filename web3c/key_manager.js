@@ -177,7 +177,7 @@ class KeyManager {
 
   /**
    * Encrypt an EthHex message with the local private key. Rejects on error.
-   * @param {String} msg EthHex the encrypted message
+   * @param {String} cyphertext EthHex the encrypted message
    * @return {String} EthHex The decoded message.
    */
   async decrypt(cyphertext) {
