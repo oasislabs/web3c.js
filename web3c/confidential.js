@@ -21,9 +21,7 @@ const Confidential = function (web3, storage, mraebox) {
   // Otherwise `this` is overridden when `new` is used in `new Contract`.
   let self = this;
   /**
-   * web3.confidential.Contract behaves like web3.eth.Contract, except that
-   * because of the object `this` binding, developers don't use `new` when
-   * instantiating a confidential contract.
+   * web3.confidential.Contract behaves like web3.eth.Contract.
    * @param {Object} abi
    * @param {String} address
    * @param {Object} options
