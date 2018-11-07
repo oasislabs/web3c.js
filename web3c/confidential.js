@@ -17,6 +17,8 @@ const Confidential = function (web3, storage, mraebox) {
     method.attachToObject(this);
   });
 
+  // Save `this` so that we can refer to it and its properties inside `ConfidentialContract`. 
+  // Otherwise `this` is overridden when `new` is used in `new Contract`.
   let self = this;
   /**
    * web3.confidential.Contract behaves like web3.eth.Contract, except that
