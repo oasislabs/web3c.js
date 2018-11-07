@@ -134,7 +134,7 @@ function onDeployFormSubmit (ev) {
       let deploy = contract.deploy({data: bytecode, arguments: [[]]});
       let gas = await deploy.estimateGas();
       return deploy.send({
-        gasPrice: "0x3b9aca00",
+        gasPrice: '0x3b9aca00',
         gas: gas,
         from: a[0]
       });

@@ -28,13 +28,15 @@ const Confidential = function (web3, storage, mraebox) {
    * @param {String} options.key The longterm key of the contract.
    * @param {bool}   options.saveSession false to disable storing keys.
    */
-  this.Contract = function (abi, address, options) {
+  this.Contract = function ConfidentialContract(abi, address, options) {
     let c = new web3.eth.Contract(abi, address, options);
     // Copy the wrapped contract to `this`.
+    Object.assign(this, c);
     this.__proto__ = c.__proto__;
-    Object.keys(c).forEach((k) => {
-      this[k] = c[k];
-    });
+
+    // Object.DefineProperty's are not copied otherwise.
+    this.defaultAccount = c.constructor.defaultAccount;
+    this.defaultBlock = c.constructor.defaultBlock || 'latest';
 
     let instanceProvider = provider;
 
@@ -59,13 +61,9 @@ const Confidential = function (web3, storage, mraebox) {
     };
 
     // Deployed contracts are instantiated with clone.
-    // This patch rebinds the confidential provider, which is otherwise lost.
-    let boundClone = this.clone.bind(this);
+    // This patch keeps those clones confidential.
     this.clone = () => {
-      let cloned = boundClone();
-      cloned.setProvider(this.currentProvider);
-      cloned._decodeEventABI = this._decodeEventABI;
-      return cloned;
+      return new ConfidentialContract(this.options.jsonInterface, this.options.address, this.options);
     };
 
     if (options && options.key) {

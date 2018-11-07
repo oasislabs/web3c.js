@@ -131,7 +131,7 @@ describe('Web3', () => {
       gasPrice: '0x3b9aca00',
       gas: estimatedGas
     });
-    const txHash = counterContract._provider.outstanding[0];
+    const txHash = counterContract._requestManager.provider.outstanding[0];
     const receipt = await _web3c.eth.getTransactionReceipt(txHash);
 
     assert.equal(estimatedGas, receipt.gasUsed);

@@ -181,7 +181,7 @@ class KeyManager {
    * @return {String} EthHex The decoded message.
    */
   async decrypt(cyphertext) {
-    if (!cyphertext || cyphertext == "0x") {
+    if (!cyphertext || cyphertext == '0x') {
       return cyphertext;
     }
     let cypherBytes = parseHex(cyphertext);
