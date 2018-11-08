@@ -50,3 +50,32 @@ run locally with `npm test`. An additional set of browser integration tests
 are run manually before releases to ensure functionality on the range of
 expected environments. These can be run via the command
 `npm run-script test:browser`.
+
+### Webpack Integration
+
+Web3c is structured with a ["soft"](https://webpack.js.org/guides/code-splitting/)
+dependency on web3. This means that a default compilation of a project requiring
+web3c with webpack will not have web3 loaded synchronously. This choice adds
+a bit of complexity you should be aware of, but is useful because it allows your
+project to load faster and never trigger the full download of web3 in cases where
+the injected wallet in the user's browser already contains a copy.
+
+There are two recommeded strategies for handling loading of web3c in a webpack
+project:
+
+* **Synchronous web3** You can make sure the web3 dependency ends up in the same
+webpack code module by including it as a direct dependnecy:
+```javascript
+const web3c = require('web3c');
+require('web3'); // eslint-disable-line no-unused-expressions
+```
+Note: You don't ned to use web3, as all of its methods are accessible through the
+web3c object. Adding a `require` call somewhere in your project is a simple way
+to pull the dependent code into the same code module for synchronous use.
+
+* **Asynchronous web3** You can defer usage of web3c until web3 is available:
+```javascript
+const web3c = require('web3c');
+...
+web3c.Promise.then(initialize);
+```
