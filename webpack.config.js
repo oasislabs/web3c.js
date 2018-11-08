@@ -17,12 +17,11 @@ module.exports = {
         ],
         use: [
           'babel-loader',
-          'webpack-strip-block',
         ]
       }
     ]
   },
-  entry: './index',
+  entry: './index.browser',
   resolve: {
     modules: [
       'node_modules',
@@ -34,9 +33,6 @@ module.exports = {
       '../crypto/node': '../crypto/subtle',
       './crypto/node': './crypto/subtle',
     }
-  },
-  externals: {
-    'text-encoding': 'TextEncoder'
   },
   output: {
     path: __dirname + '/output',
