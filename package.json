@@ -24,7 +24,7 @@
     "ekiden"
   ],
   "author": "Oasis Labs Inc. <info@oasislabs.com>",
-  "license": "Apache-2.0",
+  "license": "LGPL-3.0-or-later",
   "bugs": {
     "url": "https://github.com/oasislabs/web3c.js/issues"
   },
