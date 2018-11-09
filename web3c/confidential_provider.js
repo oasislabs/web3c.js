@@ -43,7 +43,7 @@ class ConfidentialProvider {
       transform.ethLogs(payload, callback);
     }
     else if (payload.method == 'eth_getTransactionReceipt') {
-      transform.ethTransactionReciept(payload, callback, this.outstanding);
+      transform.ethTransactionReceipt(payload, callback, this.outstanding);
     }
     else if (payload.method == 'eth_estimateGas') {
       transform.ethEstimateGas(payload, callback);
@@ -132,7 +132,7 @@ class ConfidentialSendTransform {
     });
   }
 
-  ethTransactionReciept(payload, callback, outstanding) {
+  ethTransactionReceipt(payload, callback, outstanding) {
     let tryAdd = outstanding.indexOf(payload.params[0]) > -1;
     return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, async (err, res) => {
       if (!err && res.result && res.result.logs && res.result.logs.length) {
