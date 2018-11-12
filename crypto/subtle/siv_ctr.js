@@ -1,4 +1,8 @@
 // Browser based Siv_Ctr implementation based on subtle crypto.
+
+// See http://web.cs.ucdavis.edu/~rogaway/papers/keywrap.pdf for the
+// design of the SIV cryptographic scheme here.
+
 const subtle = window.crypto.subtle;
 const TagSize = 16;
 
@@ -21,6 +25,7 @@ var equals = function (a, b) {
   return true;
 }
 
+// Algorithm $\tilde{\mathcal{E}}$ (page 7)
 var Encrypt = async function (Key, Nonce, Plaintext, AdditionalData) {
   let MACKey = await subtle.importKey(
     'raw', new Uint8Array(Key).slice(0, 32), {
@@ -60,6 +65,7 @@ var Encrypt = async function (Key, Nonce, Plaintext, AdditionalData) {
   return merge(new Uint8Array(Cyphertext), new Uint8Array(Siv).slice(0, TagSize));
 };
 
+// Algorithm $\tilde{\mathcal{D}}$ (page 7)
 var Decrypt = async function (Key, Nonce, Ciphertext, AdditionalData) {
   let MACKey = await subtle.importKey(
     'raw', new Uint8Array(Key).slice(0, 32), {
