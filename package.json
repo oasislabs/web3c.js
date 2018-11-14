@@ -8,7 +8,7 @@
     "build": "webpack-command --entry ./index.browser.js --output output/web3c.js",
     "watch": "webpack-command --watch --entry ./index.browser.js --output output/web3c.js",
     "test": "nyc --reporter=html --reporter=text mocha && npm run-script lint",
-    "test:browser": "mocha init output/ && webpack-command --entry ./tests.js --output output/tests.js",
+    "test:browser": "mocha init output/ && webpack-command --mode development --entry ./tests.js --output output/tests.js",
     "test:gateway": "cd test/ && truffle compile && npm test && cd ../",
     "lint": "eslint *.js crypto/ demo/ test/ web3c/",
     "lint:fix": "eslint *.js crypto/ demo/ test/ web3c/ --fix",
