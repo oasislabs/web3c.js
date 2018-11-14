@@ -36,7 +36,7 @@ module.exports = env => {
       }
     },
     output: {
-      path: __dirname + '/output',
+      path: path.join(__dirname, 'output'),
       filename: 'web3c.js',
       chunkFilename: '[name].js',
     },
