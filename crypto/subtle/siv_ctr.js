@@ -6,10 +6,21 @@
 const subtle = window.crypto.subtle;
 const TagSize = 16;
 
-var merge = function (a, b) {
-  var out = new Uint8Array(a.byteLength + b.byteLength);
-  out.set(a);
-  out.set(b, a.byteLength);
+// merge is a variadic function.  Instead of having named arguments,
+// it uses the arguments Array-like object
+// (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/arguments)
+// to access the actual arguments by indexing.
+var merge = function() {
+  var length = 0;
+  for (let i = 0; i < arguments.length; i++) {
+    length += arguments[i].length;
+  }
+  var out = new Uint8Array(length);
+  var offset = 0;
+  for (let i = 0; i < arguments.length; i++) {
+    out.set(arguments[i], offset);
+    offset += arguments[i].length;
+  }
   return out;
 };
 
@@ -46,7 +57,7 @@ var Encrypt = async function (Key, Nonce, Plaintext, AdditionalData) {
   new DataView(AdditionalDataLength).setUint32(0, AdditionalData.byteLength, false);
   let PlaintextLength = new ArrayBuffer(4);
   new DataView(PlaintextLength).setUint32(0, Plaintext.byteLength, false);
-  let SivData = merge(merge(merge(Nonce, new Uint8Array(AdditionalDataLength)), merge(new Uint8Array(PlaintextLength), AdditionalData)), Plaintext);
+  let SivData = merge(Nonce, new Uint8Array(AdditionalDataLength), new Uint8Array(PlaintextLength), AdditionalData, Plaintext);
   let Siv = await subtle.sign(
     {name: 'HMAC'},
     MACKey,
@@ -99,7 +110,7 @@ var Decrypt = async function (Key, Nonce, Ciphertext, AdditionalData) {
   new DataView(AdditionalDataLength).setUint32(0, AdditionalData.byteLength, false);
   let PlaintextLength = new ArrayBuffer(4);
   new DataView(PlaintextLength).setUint32(0, Plaintext.byteLength, false);
-  let SivData = merge(merge(merge(Nonce, new Uint8Array(AdditionalDataLength)), merge(new Uint8Array(PlaintextLength), AdditionalData)), new Uint8Array(Plaintext));
+  let SivData = merge(Nonce, new Uint8Array(AdditionalDataLength), new Uint8Array(PlaintextLength), AdditionalData, new Uint8Array(Plaintext));
   let Siv = await subtle.sign(
     {name: 'HMAC'},
     MACKey,
