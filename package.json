@@ -1,6 +1,6 @@
 {
   "name": "web3c",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Confidentiality extension for Web3",
   "main": "index.node.js",
   "module": "index.browser.js",
