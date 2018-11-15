@@ -1,6 +1,6 @@
 repository:
   # See https://developer.github.com/v3/repos/#edit for all available settings.
-  private: true
+  private: false
   default_branch: master
   has_issues: true
   has_projects: false
@@ -66,6 +66,8 @@ labels:
 teams:
   - name: dev
     permission: push
+  - name: admin
+    permission: admin
 
 branches:
   - name: master
