@@ -35,7 +35,7 @@ let myContractInstance = new web3.confidential.Contract(abi, deployed_address, {
 
 If the contract is deployed as part of your project, web3c will retrieve the
 longterm key when the contract is deployed, and will attempt to store it for
-subsequent uses automatically. In these cases the `web3c
+subsequent uses automatically.
 
 ## Building / Development
 
