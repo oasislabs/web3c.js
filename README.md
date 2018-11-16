@@ -23,19 +23,19 @@ not depend upon the vendored web3 unless no web3 context is present in the
 environment into which it is included.
 
 If you want to convert an existing contract to confidential, you will change
-the call from `new web3.eth.Contract` to `web3.confidential.Contract`. If your
+the call from `new web3.eth.Contract` to `new web3.confidential.Contract`. If your
 project interacts with an already deployed contract, you should add the key
 of the confidential contract as an additional option to this call to ensure
 safety:
 ```javascript
-let myContractInstance = web3.confidential.Contract(abi, deployed_address, {
+let myContractInstance = new web3.confidential.Contract(abi, deployed_address, {
   key: "0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a"
 });
 ```
 
 If the contract is deployed as part of your project, web3c will retrieve the
 longterm key when the contract is deployed, and will attempt to store it for
-subsequent uses automatically.
+subsequent uses automatically. In these cases the `web3c
 
 ## Building / Development
 
