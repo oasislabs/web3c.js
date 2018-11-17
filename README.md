@@ -68,7 +68,7 @@ webpack code module by including it as a direct dependnecy:
 const web3c = require('web3c');
 require('web3'); // eslint-disable-line no-unused-expressions
 ```
-Note: You don't ned to use web3, as all of its methods are accessible through the
+Note: You don't need to use web3, as all of its methods are accessible through the
 web3c object. Adding a `require` call somewhere in your project is a simple way
 to pull the dependent code into the same code module for synchronous use.
 
