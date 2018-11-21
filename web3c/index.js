@@ -41,12 +41,15 @@ if (typeof Web3 !== 'undefined' && (new Web3()).version && !(new Web3()).version
 // Require.ensure allows loading the bundled, compiled version of web3 as
 // as a separate browser request, with the downside that it is asynchronous,
 // and means that `new web3c()` will not be functional immediately.
-} else if (typeof define !== 'undefined') {
+} else if (typeof define !== 'undefined' && typeof require.ensure !== 'undefined') {
   // webpack
   require.ensure(['web3'], function(require) {
     localWeb3 = require('web3');
     resolveWeb3(module.exports);
-  }, function(err) {
-    rejectWeb3(err);
-  }, 'web3');
+  }, rejectWeb3, 'web3');
+} else {
+  require('index.es6').then(web3 => {
+    localWeb3 = web3;
+    resolveWeb3(module.exports);
+  }).catch(rejectWeb3);
 }
