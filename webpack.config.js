@@ -16,12 +16,17 @@ module.exports = env => {
           exclude: [
             path.resolve(__dirname, 'node_modules')
           ],
-          use: [
-            'babel-loader',
-          ]
+          use: {
+            loader: 'babel-loader',
+            options: {
+              presets: ['@babel/preset-env'],
+              plugins: ["@babel/plugin-syntax-dynamic-import", "@babel/plugin-transform-regenerator"]
+            }
+          }
         }
       ]
     },
+    entry: ["@babel/polyfill", "./index.browser"],
     entry: './index.browser',
     resolve: {
       modules: [
