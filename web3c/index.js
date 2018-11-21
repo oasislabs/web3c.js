@@ -42,7 +42,7 @@ if (typeof Web3 !== 'undefined' && (new Web3()).version && !(new Web3()).version
 // browser request, with the downside that it is asynchronous, and
 // means that `new web3c()` will not be functional immediately.
 } else if (typeof define !== 'undefined') {
-  import('web3').then(_web3 => {
+  import(/* webpackChunkName: "web3" */ 'web3').then(_web3 => {
     localWeb3 = _web3.default;
     resolveWeb3(module.exports);
   }).catch(err => {
