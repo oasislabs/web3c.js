@@ -38,15 +38,14 @@ if (typeof Web3 !== 'undefined' && (new Web3()).version && !(new Web3()).version
   localWeb3 = Web3;
   resolveWeb3(module.exports);
 // Option 2: At load time, the webpack module does not find web3.
-// Require.ensure allows loading the bundled, compiled version of web3 as
-// as a separate browser request, with the downside that it is asynchronous,
-// and means that `new web3c()` will not be functional immediately.
+// import loads the bundled, compiled version of web3 as a separate
+// browser request, with the downside that it is asynchronous, and
+// means that `new web3c()` will not be functional immediately.
 } else if (typeof define !== 'undefined') {
-  // webpack
-  require.ensure(['web3'], function(require) {
-    localWeb3 = require('web3');
+  import('web3').then(_web3 => {
+    localWeb3 = _web3.default;
     resolveWeb3(module.exports);
-  }, function(err) {
+  }).catch(err => {
     rejectWeb3(err);
-  }, 'web3');
+  });
 }
