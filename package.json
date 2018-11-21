@@ -31,6 +31,7 @@
   "homepage": "https://github.com/oasislabs/web3c.js#readme",
   "devDependencies": {
     "babel-core": "^6.26.3",
+    "babel-eslint": "^10.0.1",
     "babel-loader": "^7.1.5",
     "copy-webpack-plugin": "^4.5.3",
     "coveralls": "^3.0.2",
@@ -39,7 +40,7 @@
     "nyc": "^13.1.0",
     "truffle-hdwallet-provider": "0.0.6",
     "tweetnacl": "^1.0.0",
-    "webpack": "^4.20.2",
+    "webpack": "^4.26.0",
     "webpack-command": "^0.4.1"
   },
   "eslintConfig": {
