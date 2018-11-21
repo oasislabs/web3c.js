@@ -20,14 +20,13 @@ module.exports = env => {
             loader: 'babel-loader',
             options: {
               presets: ['@babel/preset-env'],
-              plugins: ["@babel/plugin-syntax-dynamic-import", "@babel/plugin-transform-regenerator"]
+              plugins: ['@babel/plugin-syntax-dynamic-import', '@babel/plugin-transform-regenerator']
             }
           }
         }
       ]
     },
-    entry: ["@babel/polyfill", "./index.browser"],
-    entry: './index.browser',
+    entry: ['@babel/polyfill', './index.browser'],
     resolve: {
       modules: [
         'node_modules',
