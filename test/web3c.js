@@ -39,12 +39,6 @@ describe('Web3', () => {
     });
   }
 
-  it('should retrieve contract keys', async function() {
-    let inst = new web3c(gw);
-    let key = await inst.confidential.getPublicKey('0x62f5dffcb1C45133c670C7786cD94B75D69F09e1');
-    assert.equal(64 + 2, key.public_key.length);
-  }).timeout(TIMEOUT);
-
   it('should support transient contracts with separate key state', async () => {
     let firstContract = new (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
     let secondContract = new (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
@@ -52,6 +46,33 @@ describe('Web3', () => {
     let firstKey = firstContract._requestManager.provider.keymanager.getPublicKey();
     let secondKey = secondContract._requestManager.provider.keymanager.getPublicKey();
     assert.notEqual(firstKey, secondKey);
+  }).timeout(TIMEOUT);
+
+  it('should retrieve contract keys from a previously deployed contract address', async function() {
+    let _web3c = new web3c(gw);
+    let counterContract = new _web3c.confidential.Contract(artifact.abi);
+    try {
+      let contract = await counterContract.deploy({
+        data: artifact.bytecode
+      }).send({
+        from: address,
+        gasPrice: '0x3b9aca00'
+      });
+      let key = await _web3c.confidential.getPublicKey(contract.options.address);
+      assert.equal(64 + 2, key.public_key.length);
+    } catch (e) {
+      assert.fail(e);
+    }
+  }).timeout(TIMEOUT);
+
+  it('should not retrieve contract keys from a non deployed contract address', async function() {
+    assert.rejects(
+      async function () {
+        await new web3c(gw)
+          .confidential
+          .getPublicKey('0x0000000000000000000000000000000000000000')
+      }
+    );
   }).timeout(TIMEOUT);
 
   it('should deploy a confidential counter contract', async () => {
