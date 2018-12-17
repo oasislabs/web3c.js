@@ -125,12 +125,14 @@ describe('Web3', () => {
     } catch (e) {
       assert.fail(e);
     }
-    await instance.methods.incrementCounter().send({
+    const receipt = await instance.methods.incrementCounter().send({
       from: address,
       gasPrice: '0x3b9aca00'
     });
-
-    let logs = await instance.getPastEvents();
+    const logs = await instance.getPastEvents('allEvents', {
+      fromBlock: receipt.blockNumber,
+      toBlock: receipt.blockNumber
+    });
     assert.equal(logs.length, 1);
     // since the client uses a different ephemeral key each time, it
     // won't always be able to decode the returned log.
