@@ -65,8 +65,9 @@ describe('Web3', () => {
     }
   }).timeout(TIMEOUT);
 
+
   it('should not retrieve contract keys from a non deployed contract address', async function() {
-    assert.rejects(
+    await assert.rejects(
       async function () {
         await new web3c(gw)
           .confidential
