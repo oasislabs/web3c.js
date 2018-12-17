@@ -82,8 +82,7 @@ describe('Web3', () => {
         data: artifact.bytecode
       }).send({
         from: address,
-        gasPrice: '0x3b9aca00',
-        gasLimit: '0x100000'
+        gasPrice: '0x3b9aca00'
       });
     } catch (e) {
       assert.fail(e);
@@ -98,8 +97,7 @@ describe('Web3', () => {
         data: artifact.bytecode
       }).send({
         from: address,
-        gasPrice: '0x3b9aca00',
-        gasLimit: '0x100000'
+        gasPrice: '0x3b9aca00'
       });
     } catch (e) {
       assert.fail(e);
@@ -107,8 +105,7 @@ describe('Web3', () => {
 
     await instance.methods.incrementCounter().send({
       from: address,
-      gasPrice: '0x3b9aca00',
-      gasLimit: '0x100000'
+      gasPrice: '0x3b9aca00'
     });
     const count = await instance.methods.getCounter().call();
     assert.equal(count, 1);
@@ -123,16 +120,14 @@ describe('Web3', () => {
         data: artifact.bytecode
       }).send({
         from: address,
-        gasPrice: '0x3b9aca00',
-        gasLimit: '0x100000'
+        gasPrice: '0x3b9aca00'
       });
     } catch (e) {
       assert.fail(e);
     }
     await instance.methods.incrementCounter().send({
       from: address,
-      gasPrice: '0x3b9aca00',
-      gasLimit: '0x100000',
+      gasPrice: '0x3b9aca00'
     });
 
     let logs = await instance.getPastEvents();
