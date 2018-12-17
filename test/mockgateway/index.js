@@ -38,6 +38,8 @@ async function handleRequest (req) {
   }));
 
   if (req.method == 'confidential_getPublicKey') {
+	// If requesting public key for a contract that doesn't exist, then we should not
+	// provide a valid response, so exit.
     if (req.params[0] == '0x0000000000000000000000000000000000000000') {
       return;
     }
