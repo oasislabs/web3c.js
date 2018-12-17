@@ -38,6 +38,11 @@ async function handleRequest (req) {
   }));
 
   if (req.method == 'confidential_getPublicKey') {
+    // If requesting public key for a contract that doesn't exist, then we should not
+    // provide a valid response, so exit.
+    if (req.params[0] == '0x0000000000000000000000000000000000000000') {
+      return;
+    }
     obj.result = {
       'public_key': '0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a',
       'timestamp': web3.utils.toHex((new Date()).valueOf()),
