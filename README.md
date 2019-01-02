@@ -6,6 +6,13 @@ A Web3 extension for confidential transactions.
 Include `web3c.js` in your project, require web3c within your webpack project, or
 attach the confidentiality extension onto your existing use of Web3.
 
+```bash
+$ npm install --save web3c
+```
+
+For convenience, we automatically build the latest version of the library here:  
+[https://cdn.oasiscloud.io/web3c-latest/web3c.js](https://cdn.oasiscloud.io/web3c-latest/web3c.js)
+
 ### Creating a new Web3c Project
 
 You can either include a script tag linking the web3c library as you would a
