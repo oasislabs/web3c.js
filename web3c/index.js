@@ -48,7 +48,7 @@ if (typeof Web3 !== 'undefined' && (new Web3()).version && !(new Web3()).version
     resolveWeb3(module.exports);
   }, rejectWeb3, 'web3');
 } else {
-  require('index.es6').then(web3 => {
+  require('./index.es6').then(web3 => {
     localWeb3 = web3;
     resolveWeb3(module.exports);
   }).catch(rejectWeb3);
