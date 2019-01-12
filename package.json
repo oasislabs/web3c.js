@@ -39,7 +39,7 @@
     "eslint": "^5.10.0",
     "mocha": "^5.2.0",
     "nyc": "^13.1.0",
-    "truffle-hdwallet-provider": "0.0.6",
+    "truffle-hdwallet-provider": "1.0.2",
     "tweetnacl": "^1.0.0",
     "webpack": "^4.27.0",
     "webpack-command": "^0.4.2"
