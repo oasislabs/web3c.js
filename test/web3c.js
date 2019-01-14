@@ -10,7 +10,13 @@ describe('Web3', () => {
 
   let gw;
   let address;
-  const TIMEOUT = 5000;
+  let timeout;
+
+  if (process && process.env && process.env.TIMEOUT) {
+    timeout = process.env.TIMEOUT;
+  } else {
+    timeout = 5000;
+  }
 
   if (process && process.env && process.env.MNEMONIC) {
     gw = new HDWalletProvider(process.env.MNEMONIC, process.env.GATEWAY);
@@ -46,7 +52,7 @@ describe('Web3', () => {
     let firstKey = firstContract._requestManager.provider.keymanager.getPublicKey();
     let secondKey = secondContract._requestManager.provider.keymanager.getPublicKey();
     assert.notEqual(firstKey, secondKey);
-  }).timeout(TIMEOUT);
+  }).timeout(timeout);
 
   it('should retrieve contract keys from a previously deployed contract address', async function() {
     let _web3c = new web3c(gw);
@@ -63,7 +69,7 @@ describe('Web3', () => {
     } catch (e) {
       assert.fail(e);
     }
-  }).timeout(TIMEOUT);
+  }).timeout(timeout);
 
 
   it('should not retrieve contract keys from a non deployed contract address', async function() {
@@ -74,7 +80,7 @@ describe('Web3', () => {
           .getPublicKey('0x0000000000000000000000000000000000000000')
       }
     );
-  }).timeout(TIMEOUT);
+  }).timeout(timeout);
 
   it('should deploy a confidential counter contract', async () => {
     let counterContract = new (new web3c(gw)).confidential.Contract(artifact.abi);
@@ -88,7 +94,7 @@ describe('Web3', () => {
     } catch (e) {
       assert.fail(e);
     }
-  }).timeout(TIMEOUT);
+  }).timeout(timeout);
 
   it('should execute transactions and calls', async () => {
     let counterContract = new (new web3c(gw)).confidential.Contract(artifact.abi);
