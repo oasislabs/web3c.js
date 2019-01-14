@@ -116,7 +116,7 @@ describe('Web3', () => {
     });
     const count = await instance.methods.getCounter().call();
     assert.equal(count, 1);
-  }).timeout(TIMEOUT);
+  }).timeout(timeout);
 
   it('should get confidential getPastLogs logs', async () => {
     let client = new web3c(gw);
@@ -143,7 +143,7 @@ describe('Web3', () => {
     assert.equal(logs.length, 1);
     // since the client uses a different ephemeral key each time, it
     // won't always be able to decode the returned log.
-  }).timeout(TIMEOUT);
+  }).timeout(timeout);
 
   it('should estimate gas for confidential transactions the same as gas actually used', async () => {
     const _web3c = (new web3c(gw));
@@ -161,7 +161,7 @@ describe('Web3', () => {
 
     assert.equal(estimatedGas, receipt.gasUsed);
     assert.equal(estimatedGas, receipt.cumulativeGasUsed);
-  }).timeout(TIMEOUT);
+  }).timeout(timeout);
 
   it('should yield a larger estimate for confidential transactions than non-confidential', async () => {
     const _web3c = (new web3c(gw));
