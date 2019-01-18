@@ -175,5 +175,5 @@ describe('Web3', () => {
     const estimatedGas = await deploy.estimateGas();
 
     assert.equal(confidentialEstimatedGas-estimatedGas > 0, true);
-  });
+  }).timeout(timeout);
 });
