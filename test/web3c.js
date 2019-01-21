@@ -71,17 +71,6 @@ describe('Web3', () => {
     }
   }).timeout(timeout);
 
-
-  it('should not retrieve contract keys from a non deployed contract address', async function() {
-    await assert.rejects(
-      async function () {
-        await new web3c(gw)
-          .confidential
-          .getPublicKey('0x0000000000000000000000000000000000000000')
-      }
-    );
-  }).timeout(timeout);
-
   it('should deploy a confidential counter contract', async () => {
     let counterContract = new (new web3c(gw)).confidential.Contract(artifact.abi);
     try {
@@ -94,6 +83,15 @@ describe('Web3', () => {
     } catch (e) {
       assert.fail(e);
     }
+  }).timeout(timeout);
+
+  it('should estimate gas for confidential transactions', async () => {
+    const _web3c = (new web3c(gw));
+
+    let counterContract = new _web3c.confidential.Contract(artifact.abi);
+    const deployMethod = counterContract.deploy({data: artifact.bytecode});
+    let estimatedGas = await deployMethod.estimateGas();
+    assert.equal(estimatedGas, '0xe1bd');
   }).timeout(timeout);
 
   it('should execute transactions and calls', async () => {
@@ -143,37 +141,5 @@ describe('Web3', () => {
     assert.equal(logs.length, 1);
     // since the client uses a different ephemeral key each time, it
     // won't always be able to decode the returned log.
-  }).timeout(timeout);
-
-  it('should estimate gas for confidential transactions the same as gas actually used', async () => {
-    const _web3c = (new web3c(gw));
-
-    let counterContract = new _web3c.confidential.Contract(artifact.abi);
-    const deployMethod = counterContract.deploy({data: artifact.bytecode});
-    let estimatedGas = await deployMethod.estimateGas();
-    counterContract = await deployMethod.send({
-      from: address,
-      gasPrice: '0x3b9aca00',
-      gas: estimatedGas
-    });
-    const txHash = counterContract._requestManager.provider.outstanding[0];
-    const receipt = await _web3c.eth.getTransactionReceipt(txHash);
-
-    assert.equal(estimatedGas, receipt.gasUsed);
-    assert.equal(estimatedGas, receipt.cumulativeGasUsed);
-  }).timeout(timeout);
-
-  it('should yield a larger estimate for confidential transactions than non-confidential', async () => {
-    const _web3c = (new web3c(gw));
-
-    const confidentialContract = new _web3c.confidential.Contract(artifact.abi);
-    const confidentialDeploy = confidentialContract.deploy({data: artifact.bytecode});
-    const confidentialEstimatedGas = await confidentialDeploy.estimateGas();
-
-    const contract = new _web3c.eth.Contract(artifact.abi);
-    const deploy = contract.deploy({data: artifact.bytecode});
-    const estimatedGas = await deploy.estimateGas();
-
-    assert.equal(confidentialEstimatedGas-estimatedGas > 0, true);
   }).timeout(timeout);
 });
