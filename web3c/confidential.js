@@ -11,6 +11,7 @@ const KeyManager = require('./key_manager');
  */
 const Confidential = function (web3, storage, mraebox) {
   this.keyManager = new KeyManager(web3, storage, mraebox);
+  console.log(web3);
   let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
   Confidential.methods(web3.extend).forEach((method) => {
     method.setRequestManager(web3._requestManager);
