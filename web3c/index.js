@@ -12,12 +12,14 @@ let rejectWeb3 = () => {};
  * Web3c is a wrapper that can be invoked in the same way as Web3.
  * Expects Web3 v1.0
  */
-module.exports = function (provider) {
-  localWeb3.call(this, provider);
-  if (this.version && !this.version.api) { // v1.0 series
-    this.confidential = new Confidential(this, localStorage, MraeBox);
-  } else {
-    throw new Error('Unexpected web3 version. Web3c Expects Web3 1.0');
+module.exports = class Web3C extends localWeb3 {
+  constructor(provider, net, options = {}) {
+    super(provider, net, options);
+    if (this.version && !this.version.api) { // v1.0 series
+      this.confidential = new Confidential(this, localStorage, MraeBox);
+    } else {
+      throw new Error('Unexpected web3 version. Web3c Expects Web3 1.0');
+    }
   }
 };
 
