@@ -3,6 +3,10 @@ const KeyManager = require('./key_manager');
  * Hex representation of b'\0enc'.
  */
 const CONFIDENTIAL_PREFIX = '00656e63';
+/**
+ * Hex representation of b'\0sis'.
+ */
+const OASIS_PREFIX = '00736973';
 
 /**
  * ConfidentialProvider resolves calls from a Web3.eth.Contract, in particular
@@ -102,6 +106,9 @@ class ConfidentialSendTransform {
     if (!tx.to) {
       // deploy transaction doesn't encrypt anything for v0.5
       tx.data = this._prependConfidential(tx.data);
+      if (tx.header) {
+        tx.data =  '0x' + OASIS_PREFIX  + this.headerWireFormat(tx.header) + tx.data.substr(2);
+      }
       return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, res) => {
         if (!err && outstanding !== undefined) {
           // track deploy txn hashes to trust them in transaction receipts.
@@ -116,6 +123,24 @@ class ConfidentialSendTransform {
       }
       this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
     });
+  }
+
+  /**
+   * @param   {Header} The header object to encode.
+   * @returns The encoded wire format of the header, i.e.,
+   *          length (4 bytes) || version (4 bytes) || json-header
+   */
+  headerWireFormat(headerJson) {
+    let version = '00001';
+    let body = version + JSON.stringify(headerJson);
+    let headerLen = body.length.toString(16);
+    if (headerLen.length > 4) {
+      throw Error("Can't process an Oasis header of length greater than 4 bytes");
+    }
+    while (headerLen.length < 4) {
+      headerLen = '0' + headerLen;
+    }
+    return  headerLen + body;
   }
 
   /**
@@ -260,4 +285,8 @@ class ConfidentialSendTransform {
 
 module.exports = ConfidentialProvider;
 // expose for testing
-module.exports.private = { CONFIDENTIAL_PREFIX, ConfidentialSendTransform };
+module.exports.private = {
+  CONFIDENTIAL_PREFIX,
+  OASIS_PREFIX,
+  ConfidentialSendTransform
+};

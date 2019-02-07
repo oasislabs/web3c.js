@@ -4,6 +4,7 @@ const web3 = require('web3');
 const web3c = require('../');
 const gateway = require('./mockgateway');
 const artifact = require('../demo/example.json');
+const responses = require('./mockgateway/responses');
 const HDWalletProvider = require('truffle-hdwallet-provider');
 
 describe('Web3', () => {
@@ -175,6 +176,41 @@ describe('Web3', () => {
     // since the client uses a different ephemeral key each time, it
     // won't always be able to decode the returned log.
   }).timeout(timeout);
+
+  it('should specify an Oasis contract deployment header when sending a deploy transaction', async () => {
+    let client = new web3c(gw);
+    let counterContract = new client.confidential.Contract(artifact.abi, undefined, {
+      from: gateway.OASIS_HEADER_ADDRESS
+    });
+
+    let instance = await counterContract.deploy({
+      data: artifact.bytecode,
+      header: {
+        expiry: 12343333,
+        confidential: false
+      }
+    }).send();
+
+    assert.equal(responses.OASIS_DEPLOY_HEADER_TX_HASH, instance._requestManager.provider.outstanding);
+  }).timeout(timeout);
+
+  it('should specify an Oasis contract deployment header when estimating gas for a deploy transaction', async () => {
+    let client = new web3c(gw);
+    let counterContract = new client.confidential.Contract(artifact.abi, undefined, {
+      from: gateway.OASIS_HEADER_ADDRESS
+    });
+
+    let estimate = await counterContract.deploy({
+      data: artifact.bytecode,
+      header: {
+        expiry: 12343333,
+        confidential: false
+      }
+    }).estimateGas();
+
+    assert.equal(estimate, responses.OASIS_DEPLOY_HEADER_GAS);
+  }).timeout(timeout);;
+
 });
 
 /**

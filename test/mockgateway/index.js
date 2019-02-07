@@ -8,6 +8,9 @@ const keymanager = require('../../web3c/key_manager');
 const artifact = require('../../demo/example.json');
 const MraeBox = require('../../crypto/node/mrae_box');
 const CONFIDENTIAL_PREFIX = require('../../web3c/confidential_provider').private.CONFIDENTIAL_PREFIX;
+const OASIS_PREFIX = require('../../web3c/confidential_provider').private.CONFIDENTIAL_PREFIX;
+// From address to use if we are testing the oasis deployment header.
+const OASIS_HEADER_ADDRESS = '0x2222222222222222222222222222222222222222';
 
 /**
  * "From" address to use if we want the mock gateway to return a malformed signature.
@@ -74,6 +77,15 @@ async function handleRequest (req) {
     if (!req.params[0].to) {
       if (req.params[0].from === MALFORMED_SIGNATURE_FROM_ADDRESS) {
         obj.result = responses.MALFORMED_SIGNATURE_DEPLOY_TX_HASH;
+	  }
+      // Testing the oasis deployment header.
+      else if (req.params[0].from == OASIS_HEADER_ADDRESS) {
+        try {
+          validateHeader(req.params[0].data);
+          obj.result = responses.OASIS_DEPLOY_HEADER_TX_HASH;
+        } catch (e) {
+          obj.result = `error: ${e}`;
+        }
       } else if (!encdata.startsWith(CONFIDENTIAL_PREFIX)) {
         // "\0enc"
         obj.result = 'error';
@@ -106,6 +118,8 @@ async function handleRequest (req) {
         'logs': [],
         'status': '0x1',
       };
+    } else if (req.params[0] == responses.OASIS_DEPLOY_HEADER_TX_HASH) {
+      obj.result = responses.OASIS_DEPLOY_TX_RECEIPT;
     }
   } else if (req.method == 'eth_getCode') {
     obj.result = artifact.bytecode;
@@ -114,7 +128,14 @@ async function handleRequest (req) {
       obj.result = responses.CONFIDENTIAL_GET_PAST_LOGS;
     }
   } else if (req.method == 'eth_estimateGas') {
-    if (req.params[0].data.startsWith('0x' + CONFIDENTIAL_PREFIX)) {
+    if (req.params[0].from == OASIS_HEADER_ADDRESS) {
+      try {
+        validateHeader(req.params[0].data);
+        obj.result = responses.OASIS_DEPLOY_HEADER_GAS;
+      } catch (err) {
+        obj.result = `error: ${err}`;
+      }
+    } else if (req.params[0].data.startsWith('0x' + CONFIDENTIAL_PREFIX)) {
       obj.result = '0xe1bd';
     } else {
       obj.result = '0xe185';
@@ -123,9 +144,16 @@ async function handleRequest (req) {
   return obj;
 }
 
+function validateHeader(txData) {
+  if (!txData.startsWith('0x00736973002d00001{"expiry":12343333,"confidential":false}')) {
+    throw Error("Invalid deployment header");
+  }
+}
+
 module.exports = {
   start: function () {
     return http.createServer(onReq);
   },
-  MALFORMED_SIGNATURE_FROM_ADDRESS
-}
+  MALFORMED_SIGNATURE_FROM_ADDRESS,
+  OASIS_HEADER_ADDRESS
+};

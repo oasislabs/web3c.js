@@ -58,6 +58,34 @@ const Confidential = function (web3, storage, mraebox) {
     if (options && options.key) {
       keymanager.add(address, options.key);
     }
+
+	// Hook deploy so that we can pass in the Oasis contract deployment header
+	// as an extra argument. For example, contract.deploy({ data, header: { expiry } });
+	// To do this, we need to also hook into all the methods available on the returned
+	// tx object so that we can pass in such deploy options into them.
+	this.deploy = (deployOptions, callback) => {
+	  // Create the txObject that we want to patch and return.
+	  let txObject = c.deploy.call(this, deployOptions, callback);
+
+	  // Methods we want to hook into.
+	  let _send = txObject.send;
+	  let _estimateGas = txObject.estimateGas;
+
+	  // Perform patches.
+	  txObject.send = (options) => {
+		let _options = Object.assign({}, deployOptions);
+		_options = Object.assign(_options, options);
+		return _send.call(this, _options);
+	  };
+	  txObject.estimateGas = (options) => {
+		let _options = Object.assign({}, deployOptions);
+		_options = Object.assign(_options, options);
+		return _estimateGas.call(this, _options);
+	  };
+
+	  // Return the patched object.
+	  return txObject;
+	};
   };
 
   this.resetKeyManager = () => {
