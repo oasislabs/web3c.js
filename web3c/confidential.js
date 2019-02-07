@@ -1,5 +1,7 @@
 // This file provides the "web3.confidential" exported interface
 const ConfidentialProvider = require('./confidential_provider');
+const makeContractFactory = require('./contract_factory');
+const DeployHeader = require('./deploy_header');
 const KeyManager = require('./key_manager');
 const Signer = require('./signer');
 
@@ -10,89 +12,109 @@ const Signer = require('./signer');
  * and exposes the confidential contract interface by creating a
  * web3.eth.Contract communication through a ConfidentialProvider.
  */
-const Confidential = function (web3, storage, mraebox) {
-  Object.assign(this, web3.eth);
-  this.__proto__ = web3.eth.__proto__;
+class Confidential {
+  constructor (web3, storage, mraebox) {
+    this.keyManager = new KeyManager(web3, storage, mraebox);
+    this._setupConfidentialRpc(web3);
+    this._setupConfidentialContract(web3, storage, mraebox);
+    this._setupWrappedAccounts(web3);
+  }
 
-  this.keyManager = new KeyManager(web3, storage, mraebox);
-  let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
-  Confidential.methods(web3.extend).forEach((method) => {
-    method.setRequestManager(web3._requestManager);
-    method.attachToObject(this);
-  });
-
-  const defaultTransformer = new ConfidentialProvider.private.ConfidentialSendTransform(provider, this.keyManager);
-  wrapAccounts(this.accounts, defaultTransformer);
-
-  // Save `this` so that we can refer to it and its properties inside `ConfidentialContract`.
-  // Otherwise `this` is overridden when `new` is used in `new Contract`.
-  let self = this;
   /**
-   * web3.confidential.Contract behaves like web3.eth.Contract.
-   * @param {Object} abi
-   * @param {String} address
-   * @param {Object} options
-   * @param {String} options.key The longterm key of the contract.
-   * @param {bool}   options.saveSession false to disable storing keys.
+   * Creates methods on the confidential namespace that make requests to the confidential_*
+   * web3c rpc endpoints. For example, one may do `web3c.confidential.getPublicKey(address)`.
+   *
+   * @param {Object} web3 is a web3 object.
    */
-  this.Contract = function ConfidentialContract(abi, address, options) {
-    let c = new web3.eth.Contract(abi, address, options);
-    // Copy the wrapped contract to `this`.
-    Object.assign(this, c);
-    this.__proto__ = c.__proto__;
+  _setupConfidentialRpc(web3) {
+    let methods = [
+      // Second parameter - the long-term key - is intercepted by the provider.
+      new web3.extend.Method({
+        name: 'getPublicKey',
+        call: 'confidential_getPublicKey',
+        params: 1,
+        inputFormatter: [web3.extend.formatters.inputAddressFormatter],
+        outputFormatter: getPublicKeyOutputFormatter
+      }),
+      new web3.extend.Method({
+        name: 'call',
+        call: 'confidential_call_enc',
+        params: 2,
+        inputFormatter: [
+          web3.extend.formatters.inputCallFormatter,
+          web3.extend.formatters.inputDefaultBlockNumberFormatter
+        ],
+        outputFormatter: callOutputFormatter
+      }),
+    ];
 
-    // Object.DefineProperty's are not copied otherwise.
-    this.defaultAccount = c.constructor.defaultAccount;
-    this.defaultBlock = c.constructor.defaultBlock || 'latest';
+    methods.forEach((method) => {
+      method.setRequestManager(web3._requestManager);
+      method.attachToObject(this);
+    });
+  }
 
-    let instanceProvider = provider;
+  /**
+   * Creates the confidential `Contract` constructor on the `confidential` namespace.
+   * The `Contract` behaves in the same way as the eth `Contract` object, except
+   * transparently encrypts/decrypts all outbound/inbound requests according
+   * to the web3c spec.
+   */
+  _setupConfidentialContract(web3, storage, mraebox) {
+    // Save `this` so that we can refer to it and its properties inside `ConfidentialContract`.
+    // Otherwise `this` is overridden when `new` is used in `new Contract`.
+    let self = this;
 
-    let keymanager = self.keyManager;
-    if (options && options.saveSession === false) {
-      keymanager = new KeyManager(web3, undefined, mraebox);
-      instanceProvider = new ConfidentialProvider(keymanager, web3._requestManager);
-    }
+    this.Contract = makeContractFactory(web3, (options) => {
+      let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
 
-    c.setProvider.call(this, instanceProvider);
+      let keymanager = self.keyManager;
 
-    // Deployed contracts are instantiated with clone.
-    // This patch keeps those clones confidential.
-    this.clone = () => {
-      return new ConfidentialContract(this.options.jsonInterface, this.options.address, this.options);
+      if (options && options.saveSession === false) {
+        keymanager = new KeyManager(web3, undefined, mraebox);
+        provider = new ConfidentialProvider(keymanager, web3._requestManager);
+      }
+
+      if (options && options.key) {
+        keymanager.add(address, options.key);
+      }
+
+      return provider;
+    });
+
+  }
+
+  _setupWrappedAccounts(web3) {
+    let accounts = web3.eth.accounts;
+    const transformer = new ConfidentialProvider.private.ConfidentialSendTransform(web3._requestManager.provider, this.keyManager);
+
+    let wrappedSigner = accounts.signTransaction.bind(accounts);
+
+    accounts.signTransaction = function signConfidentialTransaction (tx, from) {
+      if (tx.to) {
+        return new Promise(function (resolve, reject) {
+          transformer.encryptTx(tx, function finishSignConfidentialTransaction(err) {
+            if (err) {
+              reject(err);
+            }
+            try {
+              return wrappedSigner(tx, from).then(resolve, reject);
+            } catch (e) {
+              reject(e);
+            }
+          });
+        });
+      }
+      transformer.addOasisDeployHeader(tx);
+      return wrappedSigner(tx, from);
     };
 
-    if (options && options.key) {
-      keymanager.add(address, options.key);
-    }
-  };
+    this.accounts = accounts;
+  }
 
-  this.resetKeyManager = () => {
+  resetKeymanager() {
     this.keyManager.reset();
-  };
-};
-
-function wrapAccounts (accounts, transformer) {
-  let wrappedSigner = accounts.signTransaction.bind(accounts);
-
-  accounts.signTransaction = function signConfidentialTransaction (tx, from) {
-    if (tx.to) {
-      return new Promise(function (resolve, reject) {
-        transformer.encryptTx(tx, function finishSignConfidentialTransaction(err) {
-          if (err) {
-            reject(err);
-          }
-          try {
-            return wrappedSigner(tx, from).then(resolve, reject);
-          } catch (e) {
-            reject(e);
-          }
-        }); 
-      });
-    }
-    // deployment
-    tx.data = transformer._prependConfidential(tx.data);
-    return wrappedSigner(tx, from);
-  };
+  }
 }
 
 function getPublicKeyOutputFormatter (t) {
@@ -107,25 +129,5 @@ function getPublicKeyOutputFormatter (t) {
 function callOutputFormatter (t) {
   return t;
 }
-
-Confidential.methods = function (ctx) {
-  return [
-    // Second parameter - the long-term key - is intercepted by the provider.
-    new ctx.Method({
-      name: 'getPublicKey',
-      call: 'confidential_getPublicKey',
-      params: 1,
-      inputFormatter: [ctx.formatters.inputAddressFormatter],
-      outputFormatter: getPublicKeyOutputFormatter
-    }),
-    new ctx.Method({
-      name: 'call',
-      call: 'confidential_call_enc',
-      params: 2,
-      inputFormatter: [ctx.formatters.inputCallFormatter, ctx.formatters.inputDefaultBlockNumberFormatter],
-      outputFormatter: callOutputFormatter
-    }),
-  ];
-};
 
 module.exports = Confidential;
