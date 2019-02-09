@@ -1,6 +1,7 @@
 // This file provides the "web3.confidential" exported interface
 const ConfidentialProvider = require('./confidential_provider');
 const KeyManager = require('./key_manager');
+const Signer = require('./signer');
 
 /**
  * Confidential
@@ -17,7 +18,7 @@ const Confidential = function (web3, storage, mraebox) {
     method.attachToObject(this);
   });
 
-  // Save `this` so that we can refer to it and its properties inside `ConfidentialContract`. 
+  // Save `this` so that we can refer to it and its properties inside `ConfidentialContract`.
   // Otherwise `this` is overridden when `new` is used in `new Contract`.
   let self = this;
   /**
@@ -48,18 +49,6 @@ const Confidential = function (web3, storage, mraebox) {
 
     c.setProvider.call(this, instanceProvider);
 
-
-    let boundEvent = c._decodeEventABI;
-    this._decodeEventABI = function (data) {
-      if (data.logIndex == 0 && data.topics &&
-          data.topics[0] == '0x' + 'f'.repeat(64)) {
-        keymanager.add(data.address, data.data);
-      } else {
-        // decoding happens in the confidential provider.
-      }
-      return boundEvent.call(this, data);
-    };
-
     // Deployed contracts are instantiated with clone.
     // This patch keeps those clones confidential.
     this.clone = () => {
@@ -77,6 +66,11 @@ const Confidential = function (web3, storage, mraebox) {
 };
 
 function getPublicKeyOutputFormatter (t) {
+  let signer = new Signer(KeyManager.publicKey());
+  let err = signer.verify(t.signature, t.public_key, t.timestamp);
+  if (err) {
+    throw err;
+  }
   return t;
 }
 

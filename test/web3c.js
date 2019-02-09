@@ -30,7 +30,7 @@ describe('Web3', () => {
     gw = new web3.providers.HttpProvider(process.env.GATEWAY);
     // todo: get address from wallet.
   } else {
-    let provider = gateway();
+    let provider = gateway.start();
     // arbitrarily chosen.
     address = '0x62f5dffcb1C45133c670C7786cD94B75D69F09e1';
 
@@ -54,8 +54,39 @@ describe('Web3', () => {
     assert.notEqual(firstKey, secondKey);
   }).timeout(timeout);
 
+  it('should error if a malformed signature is stored in the deploy logs', async () => {
+    await assert.rejects(
+      async function () {
+        let _web3c = new web3c(gw);
+        let counterContract = new _web3c.confidential.Contract(artifact.abi);
+        await counterContract.deploy({
+          data: artifact.bytecode
+        }).send({
+          from: gateway.MALFORMED_SIGNATURE_FROM_ADDRESS,
+          gasPrice: '0x3b9aca00'
+        });
+      }
+    );
+  });
+
+  it('should error if a malformed signature is returned from confidential_getPublicKey', async () => {
+    await assert.rejects(
+      async function () {
+        let _web3c = new web3c(gw);
+        let contract = new _web3c.confidential.Contract(artifact.abi);
+        contract = await contract.deploy({
+          data: artifact.bytecode
+        }).send({
+          from: address,
+          gasPrice: '0x3b9aca00'
+        });
+        await _web3c.confidential.getPublicKey(contract.options.address);
+      }
+    );
+  });
+
   it('should retrieve contract keys from a previously deployed contract address', async function() {
-    let _web3c = new web3c(gw);
+    let _web3c = web3cMockSigner(gw);
     let counterContract = new _web3c.confidential.Contract(artifact.abi);
     try {
       let contract = await counterContract.deploy({
@@ -72,7 +103,8 @@ describe('Web3', () => {
   }).timeout(timeout);
 
   it('should deploy a confidential counter contract', async () => {
-    let counterContract = new (new web3c(gw)).confidential.Contract(artifact.abi);
+    let _web3c = web3cMockSigner(gw);
+    let counterContract = new _web3c.confidential.Contract(artifact.abi);
     try {
       await counterContract.deploy({
         data: artifact.bytecode
@@ -95,7 +127,8 @@ describe('Web3', () => {
   }).timeout(timeout);
 
   it('should execute transactions and calls', async () => {
-    let counterContract = new (new web3c(gw)).confidential.Contract(artifact.abi);
+    let _web3c = web3cMockSigner(gw);
+    let counterContract = new _web3c.confidential.Contract(artifact.abi);
     let instance;
     try {
       instance = await counterContract.deploy({
@@ -117,7 +150,7 @@ describe('Web3', () => {
   }).timeout(timeout);
 
   it('should get confidential getPastLogs logs', async () => {
-    let client = new web3c(gw);
+    let client = web3cMockSigner(gw);
     let counterContract = new client.confidential.Contract(artifact.abi);
     let instance;
     try {
@@ -143,3 +176,18 @@ describe('Web3', () => {
     // won't always be able to decode the returned log.
   }).timeout(timeout);
 });
+
+/**
+ * @returns a web3c client with a mocked signer for response signature validation.
+ */
+function web3cMockSigner(gw) {
+  let mockSigner = {
+    verify: (_sign, _key, _timestamp) => {  }
+  };
+  let _web3c = new web3c(gw);
+
+  _web3c.confidential.getPublicKey.method.outputFormatter = (t) => t;
+  _web3c.confidential.keyManager.signer = mockSigner;
+
+  return _web3c;
+}

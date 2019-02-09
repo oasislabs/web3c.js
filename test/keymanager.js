@@ -1,13 +1,17 @@
 /* globals describe,it */
 const assert = require('assert');
-const keymanager = require('../web3c/key_manager');
+const KeyManager = require('../web3c/key_manager');
 const MraeBox = require('../crypto/node/mrae_box');
 
 describe('Key Manager', function() {
+  let mockSigner = {
+	verify: (_sign, _key, _timestamp) => { /* no-op */ }
+  };
+
   it('can encrypt and decrypt', async function() {
-    let km1 = new keymanager(null, undefined, MraeBox);
+    let km1 = new KeyManager(null, undefined, MraeBox, mockSigner);
     km1.getSecretKey();
-    let km2 = new keymanager(null, undefined, MraeBox);
+    let km2 = new KeyManager(null, undefined, MraeBox, mockSigner);
     km2.getSecretKey();
 
     let pubkey = km2.getPublicKey();
@@ -30,7 +34,7 @@ describe('Key Manager', function() {
   };
 
   it('manages a sane state machine for key progression', async function() {
-    let km = new keymanager(mock_web3, undefined, MraeBox);
+    let km = new KeyManager(mock_web3, undefined, MraeBox, mockSigner);
 
     // contracts start unregistered.
     assert.equal(km.isRegistered('that'), false);
@@ -42,7 +46,6 @@ describe('Key Manager', function() {
 
     km.add('that', 'magic');
     assert.equal(km.isRegistered('that'), true);
-  
     // re-adding the same value should be idempotent
     km.add('that', 'magic');
 

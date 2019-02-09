@@ -1,3 +1,4 @@
+const KeyManager = require('./key_manager');
 /**
  * Hex representation of b'\0enc'.
  */
@@ -57,6 +58,23 @@ class ConfidentialProvider {
     // TODO
     return this.manager.sendBatch(data, callback);
   }
+
+  /**
+   * @param   {String} logData is the first log upon creation of a confidential
+   *          contract. It is of the form PUBLIC_KEY || Sign(PUBLIC_KEY).
+   * @returns {Object} with the signature and public key as properties.
+   * @throws  {Error} if logData is not a hex string of the specified form.
+   */
+  static splitConfidentialDeployLog(logData) {
+    // 0x + len(publicKey) + len(signature).
+    let expectedLength = 2 + KeyManager.publicKeyLength()*2 + KeyManager.signatureLength()*2;
+    if (logData.length !== expectedLength) {
+      throw Error(`Deploy log is malformed: ${logData}`);
+    }
+    let pk = logData.substr(0, KeyManager.publicKeyLength()*2 + 2);
+    let signature = '0x' + logData.substr(KeyManager.publicKeyLength()*2 + 2);
+    return [pk, signature];
+  }
 }
 
 
@@ -105,12 +123,15 @@ class ConfidentialSendTransform {
    * @param {Array} logs The Eth logs to trial decrypt
    * @param {bool} tryAdd Look for longterm contract deploy keys to add to
    *     to the key manager.
+   * @returns {Array} [logs, Error]. If success, error is null;
    */
   async tryDecryptLogs(logs, tryAdd) {
+    let err = null;
     for (let i = 0; i < logs.length; i++) {
       if (tryAdd && logs[i].logIndex == 0 && logs[i].topics &&
           logs[i].topics[0] == '0x' + 'f'.repeat(64)) {
-        this.keymanager.add(logs[i].address, logs[i].data);
+        let [publicKey, signature] = ConfidentialProvider.splitConfidentialDeployLog(logs[i].data);
+        err = this.keymanager.tryAdd(logs[i].address, publicKey, undefined, signature);
       } else {
         try {
           let plain = await this.keymanager.decrypt(logs[i].data);
@@ -120,13 +141,15 @@ class ConfidentialSendTransform {
         }
       }
     }
-    return logs;
+    return [logs, err];
   }
 
   ethLogs(payload, callback) {
     return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, async (err, res) => {
       if (!err) {
-        res.result = await this.tryDecryptLogs(res.result, false);
+        let [logs, decryptError] = await this.tryDecryptLogs(res.result, false);
+        res.result = logs;
+        err = decryptError;
       }
       callback(err, res);
     });
@@ -136,7 +159,9 @@ class ConfidentialSendTransform {
     let tryAdd = outstanding.indexOf(payload.params[0]) > -1;
     return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, async (err, res) => {
       if (!err && res.result && res.result.logs && res.result.logs.length) {
-        res.result.logs = await this.tryDecryptLogs(res.result.logs, tryAdd);
+        let [logs, decryptError] = await this.tryDecryptLogs(res.result.logs, tryAdd);
+        res.result.logs = logs;
+        err = decryptError;
       }
       callback(err, res);
     });

@@ -9,6 +9,11 @@ const artifact = require('../../demo/example.json');
 const MraeBox = require('../../crypto/node/mrae_box');
 const CONFIDENTIAL_PREFIX = require('../../web3c/confidential_provider').private.CONFIDENTIAL_PREFIX;
 
+/**
+ * "From" address to use if we want the mock gateway to return a malformed signature.
+ */
+const MALFORMED_SIGNATURE_FROM_ADDRESS = '0x2222222222222222222222222222222222222222';
+
 const onReq = function (req, res) {
   let body = '';
   req.on('data', chunk => {
@@ -67,8 +72,10 @@ async function handleRequest (req) {
 
     // Deploy.
     if (!req.params[0].to) {
-      // "\0enc"
-      if (!encdata.startsWith(CONFIDENTIAL_PREFIX)) {
+      if (req.params[0].from === MALFORMED_SIGNATURE_FROM_ADDRESS) {
+        obj.result = responses.MALFORMED_SIGNATURE_DEPLOY_TX_HASH;
+      } else if (!encdata.startsWith(CONFIDENTIAL_PREFIX)) {
+        // "\0enc"
         obj.result = 'error';
       } else {
         // send a arbitrary txn hash.
@@ -84,7 +91,9 @@ async function handleRequest (req) {
       }
     }
   } else if (req.method == 'eth_getTransactionReceipt') {
-    if (req.params[0] == responses.CONFIDENTIAL_DEPLOY_TX_HASH) {
+    if (req.params[0] === responses.MALFORMED_SIGNATURE_DEPLOY_TX_HASH) {
+      obj.result = responses.MALFORMED_SIGNATURE_DEPLOY_TX_RECEIPT;
+    } else if (req.params[0] == responses.CONFIDENTIAL_DEPLOY_TX_HASH) {
       obj.result = responses.CONFIDENTIAL_DEPLOY_TX_RECEIPT;
     } else if (req.params[0] == '0x000000000000000000000000000000000000000000000000000000000000000e') {
       // txn call
@@ -111,10 +120,12 @@ async function handleRequest (req) {
       obj.result = '0xe185';
     }
   }
-
   return obj;
 }
 
-module.exports = function () {
-  return http.createServer(onReq);
-};
+module.exports = {
+  start: function () {
+    return http.createServer(onReq);
+  },
+  MALFORMED_SIGNATURE_FROM_ADDRESS
+}

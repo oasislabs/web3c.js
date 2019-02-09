@@ -10,8 +10,8 @@ const CONFIDENTIAL_DEPLOY_TX_RECEIPT = {
       address: '0x5e0c135583ad36933ec1b36e8d034b15b747dd2e',
       blockHash: '0x3640f09fc74d999ef2487effff4a62371229cfad6cb9502e34d67cf57cc49e2a',
       blockNumber: '0x40',
-      // long term public key for the confidential contract
-      data: '0x9385b8391e06d67c3de1675a58cffc3ad16bcf7cc56ab35d7db1fc03fb227a54',
+      // long term public key || signature
+      data: '0xff865b0d3227149432d97bc66b4e3d66f6f7139fc013890e102e6e59436f6b04090dddb82a745c0772eec3a9e86c33909eb9c079f318c7a93e06a218300578921ea3b58b0887e70c526a5d18f44f91760b2e2045db8679f7a7a5211d795a4405',
       logIndex: '0x0',
       topics: [ '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff' ],
       transactionHash: '0xfdda2078efec4343ac47769b8694ff401acab702b82e44c6a90479b08a15ef16',
@@ -42,9 +42,17 @@ const CONFIDENTIAL_GET_PAST_LOGS = [{
   type: 'mined',
   id: 'log_055ab780'
 }];
+/**
+ * Transaction such that the receipt contains a malformed signature.
+ */
+const MALFORMED_SIGNATURE_DEPLOY_TX_HASH = "0xaaaa525f3564e8b30262fb931988888bbb203692bba9763a45c61b25ce531846";
+let MALFORMED_SIGNATURE_DEPLOY_TX_RECEIPT = JSON.parse(JSON.stringify(CONFIDENTIAL_DEPLOY_TX_RECEIPT));
+MALFORMED_SIGNATURE_DEPLOY_TX_RECEIPT.logs[0].data = '0xff865b0d3227149432d97bc66b4e3d66f6f7139fc013890e102e6e59436f6b04090dddb82a745c0772eec3a9e86c33909eb9c079f318c7a93e06a218300578921ea3b58b0887e70c526a5d18f44f91760b2e2045db8679f7a7a5211d795a4400';
 
 module.exports = {
   CONFIDENTIAL_GET_PAST_LOGS,
   CONFIDENTIAL_DEPLOY_TX_HASH,
-  CONFIDENTIAL_DEPLOY_TX_RECEIPT
-}
+  CONFIDENTIAL_DEPLOY_TX_RECEIPT,
+  MALFORMED_SIGNATURE_DEPLOY_TX_HASH,
+  MALFORMED_SIGNATURE_DEPLOY_TX_RECEIPT
+};
