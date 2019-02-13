@@ -9,13 +9,14 @@ const artifact = require('../../demo/example.json');
 const MraeBox = require('../../crypto/node/mrae_box');
 const CONFIDENTIAL_PREFIX = require('../../web3c/confidential_provider').private.CONFIDENTIAL_PREFIX;
 const OASIS_PREFIX = require('../../web3c/confidential_provider').private.CONFIDENTIAL_PREFIX;
-// From address to use if we are testing the oasis deployment header.
+/**
+ * From address to use if we are testing the oasis deployment header.
+ */
 const OASIS_HEADER_ADDRESS = '0x2222222222222222222222222222222222222222';
-
 /**
  * "From" address to use if we want the mock gateway to return a malformed signature.
  */
-const MALFORMED_SIGNATURE_FROM_ADDRESS = '0x2222222222222222222222222222222222222222';
+const MALFORMED_SIGNATURE_FROM_ADDRESS = '0x3333333333333333333333333333333333333333';
 
 const onReq = function (req, res) {
   let body = '';
