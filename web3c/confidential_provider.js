@@ -1,12 +1,5 @@
 const KeyManager = require('./key_manager');
-/**
- * Hex representation of b'\0enc'.
- */
-const CONFIDENTIAL_PREFIX = '00656e63';
-/**
- * Hex representation of b'\0sis'.
- */
-const OASIS_PREFIX = '00736973';
+const DeployHeader = require('./deploy_header');
 
 /**
  * ConfidentialProvider resolves calls from a Web3.eth.Contract, in particular
@@ -104,10 +97,8 @@ class ConfidentialSendTransform {
   ethSendTransaction(payload, callback, outstanding) {
     const tx = payload.params[0];
     if (!tx.to) {
-      // deploy transaction doesn't encrypt anything for v0.5
-      tx.data = this._prependConfidential(tx.data);
       if (tx.header) {
-        tx.data =  '0x' + OASIS_PREFIX  + this.headerWireFormat(tx.header) + tx.data.substr(2);
+        tx.data = DeployHeader.write(tx.header, tx.data);
       }
       return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, res) => {
         if (!err && outstanding !== undefined) {
@@ -123,24 +114,6 @@ class ConfidentialSendTransform {
       }
       this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
     });
-  }
-
-  /**
-   * @param   {Header} The header object to encode.
-   * @returns The encoded wire format of the header, i.e.,
-   *          length (4 bytes) || version (4 bytes) || json-header
-   */
-  headerWireFormat(headerJson) {
-    let version = '00001';
-    let body = version + JSON.stringify(headerJson);
-    let headerLen = body.length.toString(16);
-    if (headerLen.length > 4) {
-      throw Error("Can't process an Oasis header of length greater than 4 bytes");
-    }
-    while (headerLen.length < 4) {
-      headerLen = '0' + headerLen;
-    }
-    return  headerLen + body;
   }
 
   /**
@@ -232,61 +205,12 @@ class ConfidentialSendTransform {
       });
     });
   }
-
-  /**
-   * Only prepends the CONFIDENTIAL_PREFIX to the given data if it doesn't already exist.
-   * Otherwise, returns the data without modification. Assumes bytesHex is a hex encoded
-   * byte string.
-   *
-   * Background:
-   *
-   * It is an invariant that, if b'\0enc' exists as a prefix to the data field in a
-   * CREATE tx, then those four bytes are *not* part of the data field, and are used
-   * *only* to tag confidentiality.
-   *
-   * _prependConfidential is only called if there is no `to` address in the transaction.
-   * This means we are forming a CREATE transaction to create a contract. In this case,
-   * it is never the case that b'\0enc' will be a valid prefix to initcode, and this is
-   * also the case with WASM contracts (having the four byte prefix b'\0asm'). As a
-   * result, we don't need to prepend the prefix a second time, if it already exists. If
-   * it exists, we can assume its being used to mark a contract as confidential.
-   *
-   * Now, one may wonder how or why we would ever receive input that already has the
-   * b'\0enc' prefix. This may happen because we want to support the following features
-   * all at the same time:
-   *
-   * - truffle compile (with confidential prefix automatically added for any files named
-   *   confidential_*)
-   * - truffle migrate (to perform the deploy)
-   * - web3c.js deploy (using the compiled artifact from truffle compile)
-   *
-   * The migration and deploy features are interchangeable. And its nice that they can
-   * use the same compiled bytecode.
-   *
-   * If we remove this prefix check and always prepend the 4 byte prefix, then web3c.js
-   * deploy will break when using our extended truffle compile, because it will have two
-   * sets of prefixes--and so the receiving code will strip off one prefix, and then fail
-   * to execute the initcode correctly because it starts with \0enc.
-   */
-  _prependConfidential(bytesHex) {
-    if (!bytesHex.startsWith('0x')) {
-      return bytesHex;
-    }
-    // + 2 to account for the hex prefix '0x'
-    if (bytesHex.length >= CONFIDENTIAL_PREFIX.length + 2 &&
-        bytesHex.substr(2, CONFIDENTIAL_PREFIX.length) === CONFIDENTIAL_PREFIX) {
-      return bytesHex;
-    }
-
-    return '0x' + CONFIDENTIAL_PREFIX + bytesHex.substr(2);
-  }
 }
 
 
 module.exports = ConfidentialProvider;
 // expose for testing
 module.exports.private = {
-  CONFIDENTIAL_PREFIX,
   OASIS_PREFIX,
   ConfidentialSendTransform
 };
