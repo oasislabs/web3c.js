@@ -97,9 +97,12 @@ class ConfidentialSendTransform {
   ethSendTransaction(payload, callback, outstanding) {
     const tx = payload.params[0];
     if (!tx.to) {
-      if (tx.header) {
-        tx.data = DeployHeader.write(tx.header, tx.data);
-      }
+      if (!tx.header) {
+		tx.header = {};
+	  }
+	  tx.header.confidential = true;
+	  tx.data = DeployHeader.deployCode(tx.header, tx.data);
+
       return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, res) => {
         if (!err && outstanding !== undefined) {
           // track deploy txn hashes to trust them in transaction receipts.
@@ -211,6 +214,5 @@ class ConfidentialSendTransform {
 module.exports = ConfidentialProvider;
 // expose for testing
 module.exports.private = {
-  OASIS_PREFIX,
   ConfidentialSendTransform
 };

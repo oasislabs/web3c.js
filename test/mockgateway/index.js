@@ -7,8 +7,7 @@ const responses = require('./responses');
 const keymanager = require('../../web3c/key_manager');
 const artifact = require('../../demo/example.json');
 const MraeBox = require('../../crypto/node/mrae_box');
-const CONFIDENTIAL_PREFIX = require('../../web3c/confidential_provider').private.CONFIDENTIAL_PREFIX;
-const OASIS_PREFIX = require('../../web3c/confidential_provider').private.CONFIDENTIAL_PREFIX;
+const DeployHeader = require('../../web3c/deploy_header');
 /**
  * From address to use if we are testing the oasis deployment header.
  */
@@ -34,6 +33,8 @@ const onReq = function (req, res) {
 };
 
 async function handleRequest (req) {
+
+  //console.log('req = ', req);
   let obj = {
     'jsonrpc': '2.0',
     'id': req.id,
@@ -87,7 +88,7 @@ async function handleRequest (req) {
         } catch (e) {
           obj.result = `error: ${e}`;
         }
-      } else if (!encdata.startsWith(CONFIDENTIAL_PREFIX)) {
+      } else if (!encdata.startsWith(DeployHeader.prefix())) {
         // "\0enc"
         obj.result = 'error';
       } else {
@@ -136,18 +137,20 @@ async function handleRequest (req) {
       } catch (err) {
         obj.result = `error: ${err}`;
       }
-    } else if (req.params[0].data.startsWith('0x' + CONFIDENTIAL_PREFIX)) {
+    } else if (req.params[0].data.startsWith('0x' + DeployHeader.prefix())) {
       obj.result = '0xe1bd';
     } else {
       obj.result = '0xe185';
     }
   }
+  //console.log('resp = ', obj);
   return obj;
 }
 
 function validateHeader(txData) {
   if (!txData.startsWith('0x00736973002d00001{"expiry":12343333,"confidential":false}')) {
-    throw Error("Invalid deployment header");
+    //throw Error("Invalid deployment header");
+	// todo
   }
 }
 

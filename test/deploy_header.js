@@ -2,16 +2,34 @@
 const assert = require('assert');
 const DeployHeader = require('../web3c/deploy_header');
 
-describe('DeployHeader', function() {
+describe('Deploy Header', function() {
 
-  it('errors when writing a deploy header to empty bytecode', async function() {
-	let bytecode = '';
-	let header = { expiry: 100000, confidential: false};
+  let failTests = [
+	{
+	  description: 'errors when writing a deploy header to empty bytecode',
+	  bytecode: '',
+	  header: { expiry: 100000, confidential: false}
+	},
+	{
+	  description: 'errors when writing an invalid deploy header',
+	  bytecode: '0x1234',
+	  header: { invalid: 1234, expiry: 100000, confidential: false}
+	}
+  ];
 
-	assert.throws(() => DeployHeader.write(header, bytecode));
+  failTests.forEach((test) => {
+	it(test.description, async function() {
+	  assert.throws(() => DeployHeader.write(test.header, test.bytecode));
+	});
   });
 
-  let tests = [
+  let successTests = [
+	{
+	  description: 'does not change the bytecode if the header is empty',
+	  bytecode: '0x1234',
+	  header: {},
+	  expected: '0x1234'
+	},
 	{
 	  description: 'writes a deploy header to non-empty bytecode',
 	  bytecode: '0x1234',
@@ -38,9 +56,9 @@ describe('DeployHeader', function() {
 	}
   ];
 
-  tests.forEach((test) => {
+  successTests.forEach((test) => {
 	it(test.description, function() {
-	  let data = DeployHeader.write(test.header, test.bytecode);
+	  let data = DeployHeader.deployCode(test.header, test.bytecode);
 	  assert.equal(data, test.expected);
 	});
   });

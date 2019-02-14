@@ -28,12 +28,18 @@ class DeployHeader {
    *          i.e., version (2 bytes little endian) || length (2 bytes little endian) || json-header,
    *          override any header that may already exist in the deploycode.
    */
-  static write(headerBody, deploycode) {
+  static deployCode(headerBody, deploycode) {
 	if (!deploycode.startsWith('0x') || !headerBody) {
 	  throw Error('Malformed deploycode or header');
 	}
+	if (!DeployHeader.isValidBody(headerBody)) {
+	  return deploycode;
+	}
+	// Read the existing header, if it exists.
 	let header = DeployHeader.read(deploycode);
+	// Extract the initcode from the deploy code.
 	let initcode = DeployHeaderHexReader.initcode(deploycode);
+	// No header so just make a new one.
 	if (header == null) {
 	  header = new DeployHeader(DeployHeader.currentVersion(), {});
 	}
@@ -43,6 +49,10 @@ class DeployHeader {
 	}
 
 	return header.data() + initcode;
+  }
+
+  static isValidBody(headerBody) {
+	return 'expiry' in headerBody || 'confidential' in headerBody;
   }
 
   /**
