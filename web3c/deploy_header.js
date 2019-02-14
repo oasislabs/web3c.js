@@ -36,19 +36,19 @@ class DeployHeader {
 	  return deploycode;
 	}
 	// Read the existing header, if it exists.
-	let header = DeployHeader.read(deploycode);
+	let currentHeader = DeployHeader.read(deploycode);
 	// Extract the initcode from the deploy code.
 	let initcode = DeployHeaderHexReader.initcode(deploycode);
 	// No header so just make a new one.
-	if (header == null) {
-	  header = new DeployHeader(DeployHeader.currentVersion(), {});
+	if (currentHeader === null) {
+	  currentHeader = new DeployHeader(DeployHeader.currentVersion(), {});
 	}
 
 	if (headerBody) {
-	  Object.assign(header.body, headerBody);
+	  Object.assign(currentHeader.body, headerBody);
 	}
 
-	return header.data() + initcode;
+	return currentHeader.data() + initcode;
   }
 
   static isValidBody(headerBody) {
@@ -60,7 +60,7 @@ class DeployHeader {
    * @returns the contract deploy header prefixed to the deploycode, otherwise, null.
    */
   static read(deploycode) {
-	if (!deploycode.startsWith(DeployHeader.prefix())) {
+	if (!deploycode.startsWith('0x' + DeployHeader.prefix())) {
 	  return null;
 	}
 	let version = DeployHeaderHexReader.version(deploycode);
@@ -96,12 +96,10 @@ class DeployHeaderHexReader {
   static body(deploycode) {
 	assert.equal(true, deploycode.startsWith('0x'));
 
-	let length = DeployHeader.parseLength(deploycode);
-	let start = 2 + DeployHeader.versionLength*2 + DeployHeader.headerSizeLength()*2;
+	let length = DeployHeaderHexReader.length(deploycode);
+	let body = deploycode.substr(DeployHeaderHexReader.bodyStart(), length);
 
-	let body = versionBody.substr(start, length*2);
-
-	return body;
+	return JSON.parse(body);
   }
 
   /**

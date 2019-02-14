@@ -34,7 +34,6 @@ const onReq = function (req, res) {
 
 async function handleRequest (req) {
 
-  //console.log('req = ', req);
   let obj = {
     'jsonrpc': '2.0',
     'id': req.id,
@@ -143,14 +142,13 @@ async function handleRequest (req) {
       obj.result = '0xe185';
     }
   }
-  //console.log('resp = ', obj);
   return obj;
 }
 
 function validateHeader(txData) {
-  if (!txData.startsWith('0x00736973002d00001{"expiry":12343333,"confidential":false}')) {
-    //throw Error("Invalid deployment header");
-	// todo
+  let header = DeployHeader.read(txData);
+  if (header === null) {
+    throw Error("Invalid deployment header");
   }
 }
 
