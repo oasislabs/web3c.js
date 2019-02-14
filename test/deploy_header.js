@@ -1,9 +1,10 @@
 /* globals describe,it */
 const assert = require('assert');
 const DeployHeader = require('../web3c/deploy_header');
+const DeployHeaderHexReader = DeployHeader.private.DeployHeaderHexReader;
+const DeployHeaderHexWriter = DeployHeader.private.DeployHeaderHexWriter;
 
 describe('Deploy Header', function() {
-
   let failTests = [
 	{
 	  description: 'errors when writing a deploy header to empty bytecode',
@@ -34,25 +35,25 @@ describe('Deploy Header', function() {
 	  description: 'writes a deploy header to non-empty bytecode',
 	  bytecode: '0x1234',
 	  header: { expiry: 100000, confidential: false},
-	  expected: '0x0073697300010026{"expiry":100000,"confidential":false}1234'
+	  expected: makeExpectedBytecode({"expiry":100000,"confidential":false}, '1234')
 	},
 	{
 	  description: 'overwrites a deploy header to non-empty bytecode with an existing confidential header',
-	  bytecode: '0x0073697300010016{"confidential":false}1234',
+	  bytecode: makeExpectedBytecode({"confidential":false}, '1234'),
 	  header: { confidential: true},
-	  expected: '0x0073697300010015{"confidential":true}1234'
+	  expected: makeExpectedBytecode({"confidential":true}, '1234')
 	},
 	{
 	  description: 'overwrites a deploy header to non-empty bytecode with an existing expiry header',
-	  bytecode: '0x0073697300010011{"expiry":100000}1234',
+	  bytecode: makeExpectedBytecode({"expiry":100000}, '1234'),
 	  header: { expiry: 100001},
-	  expected: '0x0073697300010011{"expiry":100001}1234'
+	  expected: makeExpectedBytecode({"expiry":100001}, '1234')
 	},
 	{
 	  description: 'overwrites a deploy header to non-empty bytecode with an existing expiry and confidential header',
-	  bytecode: '0x0073697300010026{"expiry":100000,"confidential":false}1234',
+	  bytecode: makeExpectedBytecode({"expiry":100000,"confidential":false}, '1234'),
 	  header: { expiry: 100001, confidential: true},
-	  expected: '0x0073697300010025{"expiry":100001,"confidential":true}1234'
+	  expected: makeExpectedBytecode({"expiry":100001,"confidential":true}, '1234')
 	}
   ];
 
@@ -63,3 +64,10 @@ describe('Deploy Header', function() {
 	});
   });
 });
+
+function makeExpectedBytecode(headerBody, bytecode) {
+  let body = DeployHeaderHexWriter.body(headerBody);
+  let version = DeployHeaderHexWriter.version(DeployHeader.currentVersion());
+  let size = DeployHeaderHexWriter.size(body);
+  return '0x' + DeployHeader.prefix() + version.substr(2) + size.substr(2) + body.substr(2) + bytecode;
+}

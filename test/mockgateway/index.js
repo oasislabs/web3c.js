@@ -8,6 +8,8 @@ const keymanager = require('../../web3c/key_manager');
 const artifact = require('../../demo/example.json');
 const MraeBox = require('../../crypto/node/mrae_box');
 const DeployHeader = require('../../web3c/deploy_header');
+const DeployHeaderHexReader = DeployHeader.private.DeployHeaderHexReader;
+
 /**
  * From address to use if we are testing the oasis deployment header.
  */
@@ -146,8 +148,8 @@ async function handleRequest (req) {
 }
 
 function validateHeader(txData) {
-  let header = DeployHeader.read(txData);
-  if (header === null) {
+  let header = DeployHeaderHexReader.header(txData);
+  if (header === null || header.version !== 1 || header.body.expiry !== 12343333 || header.body.confidential !== true) {
     throw Error("Invalid deployment header");
   }
 }
