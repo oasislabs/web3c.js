@@ -64,6 +64,7 @@ const Confidential = function (web3, storage, mraebox) {
 	// To do this, we need to also hook into all the methods available on the returned
 	// tx object so that we can pass in such deploy options into them.
 	this.deploy = (deployOptions, callback) => {
+	  deployOptions = Object.assign({}, deployOptions);
 	  // Create the txObject that we want to patch and return.
 	  let txObject = c.deploy.call(this, deployOptions, callback);
 
@@ -73,14 +74,14 @@ const Confidential = function (web3, storage, mraebox) {
 
 	  // Perform patches.
 	  txObject.send = (options) => {
-		let _options = Object.assign({}, deployOptions);
-		_options = Object.assign(_options, options);
-		return _send.call(this, _options);
+		options = Object.assign({}, options);
+		options.header = deployOptions.header;
+		return _send.call(this, options);
 	  };
 	  txObject.estimateGas = (options) => {
-		let _options = Object.assign({}, deployOptions);
-		_options = Object.assign(_options, options);
-		return _estimateGas.call(this, _options);
+		options = Object.assign({}, options);
+		options.header = deployOptions.header;
+		return _estimateGas.call(this, options);
 	  };
 
 	  // Return the patched object.
@@ -90,6 +91,11 @@ const Confidential = function (web3, storage, mraebox) {
 
   this.resetKeyManager = () => {
     this.keyManager.reset();
+  };
+
+  this.expiry = async () => {
+	console.log('getting expiry!');
+	return 11;
   };
 };
 

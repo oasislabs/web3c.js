@@ -102,7 +102,8 @@ class ConfidentialSendTransform {
 	  }
 	  tx.header.confidential = true;
 	  tx.data = DeployHeader.deployCode(tx.header, tx.data);
-
+      // Need to delete the header from the request since it's not a valid part of the web3 rpc spec.
+      delete tx.header
       return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, res) => {
         if (!err && outstanding !== undefined) {
           // track deploy txn hashes to trust them in transaction receipts.
