@@ -59,43 +59,54 @@ const Confidential = function (web3, storage, mraebox) {
       keymanager.add(address, options.key);
     }
 
-	// Hook deploy so that we can pass in the Oasis contract deployment header
-	// as an extra argument. For example, contract.deploy({ data, header: { expiry } });
-	// To do this, we need to also hook into all the methods available on the returned
-	// tx object so that we can pass in such deploy options into them.
-	this.deploy = (deployOptions, callback) => {
-	  deployOptions = Object.assign({}, deployOptions);
-	  // Create the txObject that we want to patch and return.
-	  let txObject = c.deploy.call(this, deployOptions, callback);
+    // Hook deploy so that we can pass in the Oasis contract deployment header
+    // as an extra argument. For example, contract.deploy({ data, header: { expiry } });
+    // To do this, we need to also hook into all the methods available on the returned
+    // tx object so that we can pass in such deploy options into them.
+    this.deploy = (deployOptions, callback) => {
+      deployOptions = Object.assign({}, deployOptions);
+      // Create the txObject that we want to patch and return.
+      let txObject = c.deploy.call(this, deployOptions, callback);
 
-	  // Methods we want to hook into.
-	  let _send = txObject.send;
-	  let _estimateGas = txObject.estimateGas;
+      // Methods we want to hook into.
+      let _send = txObject.send;
+      let _estimateGas = txObject.estimateGas;
 
-	  // Perform patches.
-	  txObject.send = (options) => {
-		options = Object.assign({}, options);
-		options.header = deployOptions.header;
-		return _send.call(this, options);
-	  };
-	  txObject.estimateGas = (options) => {
-		options = Object.assign({}, options);
-		options.header = deployOptions.header;
-		return _estimateGas.call(this, options);
-	  };
+      // Perform patches.
+      txObject.send = (options) => {
+        options = Object.assign({}, options);
+        options.header = deployOptions.header;
+        return _send.call(this, options);
+      };
+      txObject.estimateGas = (options) => {
+        options = Object.assign({}, options);
+        options.header = deployOptions.header;
+        return _estimateGas.call(this, options);
+      };
 
-	  // Return the patched object.
-	  return txObject;
-	};
+      // Return the patched object.
+      return txObject;
+    };
+
+    // Setup expiry method. Note: input to this function must be positive integer.
+    let expiry = new web3.extend.Method({
+      name: 'expiry',
+      call: 'oasis_getExpiry',
+      params: 1,
+      inputFormatter: [(address) => {
+        if (!address) {
+          address = this.options.address;
+        }
+        return web3.extend.formatters.inputAddressFormatter(address);
+      }],
+      outputFormatter: (res) => res
+    });
+    expiry.setRequestManager(web3._requestManager);
+    expiry.attachToObject(this);
   };
 
   this.resetKeyManager = () => {
     this.keyManager.reset();
-  };
-
-  this.expiry = async () => {
-	console.log('getting expiry!');
-	return 11;
   };
 };
 
