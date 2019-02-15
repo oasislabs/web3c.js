@@ -1,5 +1,6 @@
 /* globals Web3 */
 const Confidential = require('./confidential');
+const Eth = require('./eth');
 const MraeBox = require('../crypto/subtle/mrae_box');
 const Oasis = require('./oasis');
 
@@ -18,6 +19,7 @@ module.exports = function (provider) {
   if (this.version && !this.version.api) { // v1.0 series
     this.confidential = new Confidential(this, localStorage, MraeBox);
     this.oasis = new Oasis(this);
+	this.eth = new Eth(this);
   } else {
     throw new Error('Unexpected web3 version. Web3c Expects Web3 1.0');
   }

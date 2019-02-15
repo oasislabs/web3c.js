@@ -74,8 +74,6 @@ class ConfidentialProvider {
   }
 }
 
-
-
 /**
  * Wrap transactions in a confidential channel.
  */
