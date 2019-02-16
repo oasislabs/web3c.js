@@ -182,16 +182,20 @@ describe('Web3', () => {
     let counterContract = new client.confidential.Contract(artifact.abi, undefined, {
       from: gateway.OASIS_HEADER_ADDRESS
     });
-
+	let expectedExpiry = 12343333;
     let instance = await counterContract.deploy({
       data: artifact.bytecode,
       header: {
-        expiry: 12343333,
+        expiry: expectedExpiry,
         confidential: false
       }
     }).send();
 
-    assert.equal(responses.OASIS_DEPLOY_HEADER_TX_HASH, instance._requestManager.provider.outstanding);
+	let expiry = await instance.expiry();
+	assert.equal(expiry, expectedExpiry);
+	// Bonus: Sanity check other api.
+	expiry = await client.oasis.expiry(instance.options.address);
+	assert.equal(expiry, expectedExpiry);
   }).timeout(timeout);
 
   it('should specify an Oasis contract deployment header when estimating gas for a deploy transaction', async () => {

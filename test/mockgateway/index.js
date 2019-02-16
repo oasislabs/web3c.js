@@ -143,6 +143,10 @@ async function handleRequest (req) {
     } else {
       obj.result = '0xe185';
     }
+  } else if (req.method === 'oasis_getExpiry') {
+	if (req.params[0] === responses.CONFIDENTIAL_DEPLOY_TX_RECEIPT.contractAddress) {
+	  obj.result = 12343333;
+	}
   }
   return obj;
 }
