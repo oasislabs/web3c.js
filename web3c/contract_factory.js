@@ -4,11 +4,11 @@
  *          Oasis contract header upon deploy and the ability to retrieve contract
  *          expiry from an instance of such a Contract. This is used in both confidential
  *          and non confidential settings.
- * @param   {Object} provider is the Contract's web3 provider receiving  all requests going
- *          to/from the Contract object.
- * @param   {Function?} providerFn is a block to execute returning a new provider based upon
- *          options given upon constructing the contract. In confidential contracts, for
- *          example, { saveSession: false }.
+ * @param   {Object} web3 the web3 object.
+ * @param   {Function?} providerFn is a block to execute returning the contract's provider.
+ *          The providerFn should take one argument, the options given upon invoking the
+ *          Contract constructor, for example { saveSession: false } for confidential
+ *          contracts.
  */
 function make(web3, providerFn) {
   let EthContract = web3.eth.Contract;
