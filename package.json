@@ -1,6 +1,6 @@
 {
   "name": "web3c",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Confidentiality extension for Web3",
   "main": "index.node.js",
   "module": "index.browser.js",
@@ -31,18 +31,18 @@
   },
   "homepage": "https://github.com/oasislabs/web3c.js#readme",
   "devDependencies": {
-    "@babel/core": "^7.2.2",
+    "@babel/core": "^7.3.3",
     "babel-eslint": "^10.0.1",
-    "babel-loader": "^8.0.4",
+    "babel-loader": "^8.0.5",
     "copy-webpack-plugin": "^4.6.0",
     "coveralls": "^3.0.2",
-    "eslint": "^5.10.0",
+    "eslint": "^5.14.0",
     "ethers": "^4.0.25",
     "mocha": "^5.2.0",
     "nyc": "^13.3.0",
     "truffle-hdwallet-provider": "1.0.2",
     "tweetnacl": "^1.0.1",
-    "webpack": "^4.27.0",
+    "webpack": "^4.29.4",
     "webpack-command": "^0.4.2"
   },
   "eslintConfig": {
