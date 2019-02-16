@@ -33,11 +33,9 @@ class EthContractProvider {
   ethSendTransaction(payload, callback) {
     let tx = payload.params[0];
     if (!tx.to) {
-      if (!tx.header) {
-        tx.header = {};
+      if (tx.header) {
+        tx.data = DeployHeader.deployCode(tx.header, tx.data);
       }
-      tx.header.confidential = true;
-      tx.data = DeployHeader.deployCode(tx.header, tx.data);
       // Need to delete the header from the request since it's not a valid part of the web3 rpc spec.
       delete tx.header
     }
