@@ -11,12 +11,18 @@ const Signer = require('./signer');
  * web3.eth.Contract communication through a ConfidentialProvider.
  */
 const Confidential = function (web3, storage, mraebox) {
+  Object.assign(this, web3.eth);
+  this.__proto__ = web3.eth.__proto__;
+
   this.keyManager = new KeyManager(web3, storage, mraebox);
   let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
   Confidential.methods(web3.extend).forEach((method) => {
     method.setRequestManager(web3._requestManager);
     method.attachToObject(this);
   });
+
+  const defaultTransformer = new ConfidentialProvider.private.ConfidentialSendTransform(provider, this.keyManager);
+  wrapAccounts(this.accounts, defaultTransformer);
 
   // Save `this` so that we can refer to it and its properties inside `ConfidentialContract`.
   // Otherwise `this` is overridden when `new` is used in `new Contract`.
@@ -64,6 +70,30 @@ const Confidential = function (web3, storage, mraebox) {
     this.keyManager.reset();
   };
 };
+
+function wrapAccounts (accounts, transformer) {
+  let wrappedSigner = accounts.signTransaction.bind(accounts);
+
+  accounts.signTransaction = function signConfidentialTransaction (tx, from) {
+    if (tx.to) {
+      return new Promise(function (resolve, reject) {
+        transformer.encryptTx(tx, function finishSignConfidentialTransaction(err) {
+          if (err) {
+            reject(err);
+          }
+          try {
+            return wrappedSigner(tx, from).then(resolve, reject);
+          } catch (e) {
+            reject(e);
+          }
+        }); 
+      });
+    }
+    // deployment
+    tx.data = transformer._prependConfidential(tx.data);
+    return wrappedSigner(tx, from);
+  };
+}
 
 function getPublicKeyOutputFormatter (t) {
   let signer = new Signer(KeyManager.publicKey());

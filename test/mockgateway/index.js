@@ -2,6 +2,7 @@
 // Uses a fixed key for operations.
 const http = require('http');
 const web3 = require('web3');
+const ethers = require('ethers');
 
 const responses = require('./responses');
 const keymanager = require('../../web3c/key_manager');
@@ -41,7 +42,6 @@ async function handleRequest (req) {
     'secretKey': '0x263357bd55c11524811cccf8c9303e3298dd71abeb1b20f3ea7db07655dba9e9',
     'publicKey': '0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a'
   }));
-
   if (req.method == 'confidential_getPublicKey') {
     // If requesting public key for a contract that doesn't exist, then we should not
     // provide a valid response, so exit.
@@ -51,7 +51,7 @@ async function handleRequest (req) {
     obj.result = {
       'public_key': '0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a',
       'timestamp': web3.utils.toHex((new Date()).valueOf()),
-      'signature': 0,
+      'signature': '0x0',
     };
   } else if (req.method == 'confidential_call_enc') {
     let encdata = req.params[0].data;
@@ -68,7 +68,7 @@ async function handleRequest (req) {
     if (encdata.startsWith('0x')) {
       encdata = encdata.substr(2);
     }
-    // remove 0x + pri before decrypting
+    // remove 0x + enc before decrypting
 
     // Deploy.
     if (!req.params[0].to) {
@@ -119,6 +119,23 @@ async function handleRequest (req) {
     } else {
       obj.result = '0xe185';
     }
+  } else if (req.method == 'net_version') {
+    obj.result = '42261';
+  } else if (req.method == 'eth_getTransactionCount') {
+    obj.result = '0x8';
+  } else if (req.method == 'eth_sendRawTransaction') {
+    let txn = ethers.utils.parseTransaction(req.params[0])
+    if (!txn.to && txn.data.startsWith('0x' + CONFIDENTIAL_PREFIX)) {
+      obj.result = responses.CONFIDENTIAL_DEPLOY_TX_HASH;
+    } else if(txn.to) {
+      obj.result = responses.CONFIDENTIAL_DEPLOY_TX_HASH;
+    } else {
+      throw new Error('raw transactions need to be confidential');
+    }
+  } else if (req.method == 'eth_gasPrice') {
+    obj.result = '0x1';
+  } else {
+    console.log(req);
   }
   return obj;
 }

@@ -191,3 +191,5 @@ function web3cMockSigner(gw) {
 
   return _web3c;
 }
+
+module.exports.web3cMockSigner = web3cMockSigner;
