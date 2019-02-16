@@ -14,7 +14,7 @@ class Signer {
   /**
    * Ensures the signature is Sign_{key_manager}(hash(longTermKey || timestamp)).
    *
-   * @param  {String} signature is a hex string signature of keyHex || timestamp.
+   * @param  {String} signatureHex is a hex string signature of keyHex || timestamp.
    * @param  {String} keyHex is a hex string of the long term public key.
    * @param  {Number?} timestamp is the timestamp at which the key expires.
    * @returns {Error} if signature !== Sign_{KEY_MANAGER_PUBLIC_KEY}(longTermKey || timestamp).
