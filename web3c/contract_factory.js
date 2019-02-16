@@ -10,7 +10,7 @@
  *          options given upon constructing the contract. In confidential contracts, for
  *          example, { saveSession: false }.
  */
-function make(web3, provider, providerFn) {
+function make(web3, providerFn) {
   let EthContract = web3.eth.Contract;
   /**
    * @param {Object} abi
@@ -29,11 +29,7 @@ function make(web3, provider, providerFn) {
     this.defaultAccount = c.constructor.defaultAccount;
     this.defaultBlock = c.constructor.defaultBlock || 'latest';
 
-    if (providerFn) {
-      provider = providerFn(options);
-    }
-
-    c.setProvider.call(this, provider);
+    c.setProvider.call(this, providerFn(options));
 
     this.clone = () => {
       return new OasisEthContract(this.options.jsonInterface, this.options.address, this.options);

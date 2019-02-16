@@ -57,12 +57,13 @@ class Confidential {
    * to the web3c spec.
    */
   setupConfidentialContract(web3, storage, mraebox) {
-    let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
     // Save `this` so that we can refer to it and its properties inside `ConfidentialContract`.
     // Otherwise `this` is overridden when `new` is used in `new Contract`.
     let self = this;
 
-    this.Contract = ContractFactory.make(web3, provider, (options) => {
+    this.Contract = ContractFactory.make(web3, (options) => {
+	  let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
+
       let keymanager = self.keyManager;
 
       if (options && options.saveSession === false) {

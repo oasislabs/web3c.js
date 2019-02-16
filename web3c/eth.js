@@ -9,7 +9,9 @@ class Eth {
   constructor(web3) {
     Object.assign(this, web3.eth);
     this.__proto__ = web3.__proto__;
-    this.Contract = ContractFactory.make(web3, new EthContractProvider(web3._requestManager));
+    this.Contract = ContractFactory.make(web3, (options) => {
+	  return new EthContractProvider(web3._requestManager);
+	});
   }
 }
 
