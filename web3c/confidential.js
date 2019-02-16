@@ -13,9 +13,9 @@ const Signer = require('./signer');
  */
 class Confidential {
   constructor (web3, storage, mraebox) {
-	this.keyManager = new KeyManager(web3, storage, mraebox);
-	this.setupConfidentialRpc(web3);
-	this.setupConfidentialContract(web3, storage, mraebox);
+    this.keyManager = new KeyManager(web3, storage, mraebox);
+    this.setupConfidentialRpc(web3);
+    this.setupConfidentialContract(web3, storage, mraebox);
   }
 
   /**
@@ -23,31 +23,31 @@ class Confidential {
    * web3c rpc endpoints. For example, one may do `web3c.confidential.getPublicKey(address)`.
    */
   setupConfidentialRpc(web3) {
-	let methods = [
+    let methods = [
       // Second parameter - the long-term key - is intercepted by the provider.
       new web3.extend.Method({
-		name: 'getPublicKey',
-		call: 'confidential_getPublicKey',
-		params: 1,
-		inputFormatter: [web3.extend.formatters.inputAddressFormatter],
-		outputFormatter: getPublicKeyOutputFormatter
+        name: 'getPublicKey',
+        call: 'confidential_getPublicKey',
+        params: 1,
+        inputFormatter: [web3.extend.formatters.inputAddressFormatter],
+        outputFormatter: getPublicKeyOutputFormatter
       }),
       new web3.extend.Method({
-		name: 'call',
-		call: 'confidential_call_enc',
-		params: 2,
-		inputFormatter: [
-		  web3.extend.formatters.inputCallFormatter,
-		  web3.extend.formatters.inputDefaultBlockNumberFormatter
-		],
-		outputFormatter: callOutputFormatter
+        name: 'call',
+        call: 'confidential_call_enc',
+        params: 2,
+        inputFormatter: [
+          web3.extend.formatters.inputCallFormatter,
+          web3.extend.formatters.inputDefaultBlockNumberFormatter
+        ],
+        outputFormatter: callOutputFormatter
       }),
-	];
+    ];
 
-	methods.forEach((method) => {
+    methods.forEach((method) => {
       method.setRequestManager(web3._requestManager);
       method.attachToObject(this);
-	});
+    });
   }
 
   /**
@@ -57,27 +57,30 @@ class Confidential {
    * to the web3c spec.
    */
   setupConfidentialContract(web3, storage, mraebox) {
-	let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
-	// Save `this` so that we can refer to it and its properties inside `ConfidentialContract`.
-	// Otherwise `this` is overridden when `new` is used in `new Contract`.
-	let self = this;
+    let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
+    // Save `this` so that we can refer to it and its properties inside `ConfidentialContract`.
+    // Otherwise `this` is overridden when `new` is used in `new Contract`.
+    let self = this;
 
-	this.Contract = ContractFactory.make(web3, provider, () => {
-	  let keymanager = self.keyManager;
+    this.Contract = ContractFactory.make(web3, provider, (options) => {
+      let keymanager = self.keyManager;
+
       if (options && options.saveSession === false) {
-		keymanager = new KeyManager(web3, undefined, mraebox);
-		provider = new ConfidentialProvider(keymanager, web3._requestManager);
+        keymanager = new KeyManager(web3, undefined, mraebox);
+        provider = new ConfidentialProvider(keymanager, web3._requestManager);
       }
 
       if (options && options.key) {
-		keymanager.add(address, options.key);
+        keymanager.add(address, options.key);
       }
-	});
+
+      return provider;
+    });
 
   }
 
   resetKeymanager() {
-	this.keyManager.reset();
+    this.keyManager.reset();
   }
 }
 
