@@ -32,17 +32,17 @@ class DeployHeader {
    * @param   {Object} headerBody is the header object to encode.
    * @param   {String} deploycode is a hex string of the current code to which we
    *          want to prefix the header.
-   * @returns The deploycode with the header prefixed as the encoded wire format,
-   *          i.e., version (2 bytes little endian) || length (2 bytes little endian) || json-header,
-   *          override any header that may already exist in the deploycode.
+   * @returns The deploycode with the header prefixed as the encoded wire format, i.e.,
+   *          b'\0sis' || version (2 bytes little endian) || length (2 bytes little endian) || json-header.
+   *          Overrides any header fields that may already exist in the deploycode.
    */
   static deployCode(headerBody, deploycode) {
-    if (!deploycode.startsWith('0x') || !headerBody) {
-      throw Error('Malformed deploycode or header');
-    }
-    if (!DeployHeader.isValidBody(headerBody)) {
+    DeployHeader.deployCodePreconditions(headerBody, deploycode);
+
+    if (Object.keys(headerBody).length === 0) {
       return deploycode;
     }
+
     // Read the existing header, if it exists.
     let currentHeader = DeployHeaderHexReader.header(deploycode);
     // Hex code to create the contract without the serialized deploy header prepended.
@@ -63,8 +63,31 @@ class DeployHeader {
     return currentHeader.data() + initcode.substr(2);
   }
 
+  static deployCodePreconditions(headerBody, deploycode) {
+    if (!deploycode.startsWith('0x')) {
+      throw Error('Malformed deploycode');
+    }
+    if (!headerBody) {
+      throw Error('No header given');
+    }
+    if (!DeployHeader.isValidBody(headerBody)) {
+      throw Error('Malformed deploycode or header');
+    }
+  }
+
+  /**
+   * @returns true iff the keys in the headerBody are part of the valid set.
+   */
   static isValidBody(headerBody) {
-    return 'expiry' in headerBody || 'confidential' in headerBody;
+    let validKeys = ['expiry', 'confidential'];
+
+    let keys = Object.keys(headerBody);
+    for (let k = 0; k < keys.length; k += 1) {
+      if (!validKeys.includes(keys[k])) {
+        return false;
+      }
+    };
+    return true;
   }
 
   /**
@@ -98,11 +121,14 @@ class DeployHeaderHexReader {
     let version = DeployHeaderHexReader.version(deploycode);
     let body = DeployHeaderHexReader.body(deploycode);
 
+    if (!DeployHeader.isValidBody(body)) {
+      throw Error(`Invalid body ${body}`);
+    }
+
     return new DeployHeader(version, body);
   }
   /**
    * @param {String} deploycode is a hex string of the header || initcode.
-   * @assumes deploycode has the OASIS_PREFIX.
    */
   static body(deploycode) {
     assert.equal(true, deploycode.startsWith('0x' + DeployHeader.prefix()));
@@ -117,7 +143,6 @@ class DeployHeaderHexReader {
 
   /**
    * @param {String} deploycode is a hex string of the header || initcode.
-   * @assumes deploycode has the OASIS_PREFIX.
    */
   static size(deploycode)  {
     assert.equal(true, deploycode.startsWith('0x' + DeployHeader.prefix()));
@@ -132,7 +157,6 @@ class DeployHeaderHexReader {
 
   /**
    * @param {String} deploycode is a hex string of the header || initcode.
-   * @assumes deploycode has the OASIS_PREFIX.
    */
   static version(deploycode) {
     assert.equal(true, deploycode.startsWith('0x' + DeployHeader.prefix()));

@@ -9,9 +9,9 @@ class Eth {
   constructor(web3) {
     Object.assign(this, web3.eth);
     this.__proto__ = web3.__proto__;
-    this.Contract = ContractFactory.make(web3, (options) => {
-	  return new EthContractProvider(web3._requestManager);
-	});
+    this.Contract = ContractFactory.make(web3, (_options) => {
+      return new EthContractProvider(web3._requestManager);
+    });
   }
 }
 
@@ -36,6 +36,10 @@ class EthContractProvider {
     let tx = payload.params[0];
     if (!tx.to) {
       if (tx.header) {
+        if (tx.header.confidential)  {
+          let err =  new Error(`Cannot specify a confidential header in the eth namespace ${tx.header}`);
+          return callback(err, null);
+        }
         tx.data = DeployHeader.deployCode(tx.header, tx.data);
       }
       // Need to delete the header from the request since it's not a valid part of the web3 rpc spec.

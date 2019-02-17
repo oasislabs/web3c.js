@@ -62,7 +62,7 @@ class Confidential {
     let self = this;
 
     this.Contract = ContractFactory.make(web3, (options) => {
-	  let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
+      let provider = new ConfidentialProvider(this.keyManager, web3._requestManager);
 
       let keymanager = self.keyManager;
 

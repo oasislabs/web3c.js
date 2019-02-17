@@ -96,9 +96,13 @@ class ConfidentialSendTransform {
     const tx = payload.params[0];
     if (!tx.to) {
       if (!tx.header) {
-        tx.header = {};
+        // We're in the confidential namespace so this is always be true.
+        tx.header = { confidential: true };
       }
-      tx.header.confidential = true;
+      if (tx.header.confidential === false) {
+        let err = new Error(`Cannot specify non confidential header in the confidential namespace: ${tx.header}`);
+        return callback(err, null);
+      }
       tx.data = DeployHeader.deployCode(tx.header, tx.data);
       // Need to delete the header from the request since it's not a valid part of the web3 rpc spec.
       delete tx.header;

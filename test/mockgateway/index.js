@@ -10,15 +10,6 @@ const MraeBox = require('../../crypto/node/mrae_box');
 const DeployHeader = require('../../web3c/deploy_header');
 const DeployHeaderHexReader = DeployHeader.private.DeployHeaderHexReader;
 
-/**
- * From address to use if we are testing the oasis deployment header.
- */
-const OASIS_HEADER_ADDRESS = '0x2222222222222222222222222222222222222222';
-/**
- * "From" address to use if we want the mock gateway to return a malformed signature.
- */
-const MALFORMED_SIGNATURE_FROM_ADDRESS = '0x3333333333333333333333333333333333333333';
-
 const onReq = function (req, res) {
   let body = '';
   req.on('data', chunk => {
@@ -78,11 +69,11 @@ async function handleRequest (req) {
 
     // Deploy.
     if (!req.params[0].to) {
-      if (req.params[0].from === MALFORMED_SIGNATURE_FROM_ADDRESS) {
+      if (req.params[0].from === responses.MALFORMED_SIGNATURE_FROM_ADDRESS) {
         obj.result = responses.MALFORMED_SIGNATURE_DEPLOY_TX_HASH;
-	  }
+      }
       // Testing the oasis deployment header.
-      else if (req.params[0].from == OASIS_HEADER_ADDRESS) {
+      else if (req.params[0].from == responses.OASIS_DEPLOY_HEADER_ADDRESS) {
         try {
           validateHeader(req.params[0].data);
           obj.result = responses.OASIS_DEPLOY_HEADER_TX_HASH;
@@ -131,7 +122,7 @@ async function handleRequest (req) {
       obj.result = responses.CONFIDENTIAL_GET_PAST_LOGS;
     }
   } else if (req.method == 'eth_estimateGas') {
-    if (req.params[0].from == OASIS_HEADER_ADDRESS) {
+    if (req.params[0].from == responses.OASIS_DEPLOY_HEADER_ADDRESS) {
       try {
         validateHeader(req.params[0].data);
         obj.result = responses.OASIS_DEPLOY_HEADER_GAS;
@@ -144,16 +135,16 @@ async function handleRequest (req) {
       obj.result = '0xe185';
     }
   } else if (req.method === 'oasis_getExpiry') {
-	if (req.params[0] === responses.CONFIDENTIAL_DEPLOY_TX_RECEIPT.contractAddress) {
-	  obj.result = 12343333;
-	}
+    if (req.params[0] === responses.CONFIDENTIAL_DEPLOY_TX_RECEIPT.contractAddress) {
+      obj.result = responses.OASIS_DEPLOY_HEADER_EXPIRY;
+    }
   }
   return obj;
 }
 
 function validateHeader(txData) {
   let header = DeployHeaderHexReader.header(txData);
-  if (header === null || header.version !== 1 || header.body.expiry !== 12343333 || header.body.confidential !== true) {
+  if (header === null || header.version !== 1 || header.body.expiry !== responses.OASIS_DEPLOY_HEADER_EXPIRY || header.body.confidential !== true) {
     throw Error("Invalid deployment header");
   }
 }
@@ -162,6 +153,5 @@ module.exports = {
   start: function () {
     return http.createServer(onReq);
   },
-  MALFORMED_SIGNATURE_FROM_ADDRESS,
-  OASIS_HEADER_ADDRESS
+  responses
 };

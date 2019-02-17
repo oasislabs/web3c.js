@@ -19,7 +19,7 @@ describe('Web3', () => {
     timeout = 5000;
   }
 
-  if (false && process && process.env && process.env.MNEMONIC) {
+  if (process && process.env && process.env.MNEMONIC) {
     gw = new HDWalletProvider(process.env.MNEMONIC, process.env.GATEWAY);
     address = Object.keys(gw.wallets)[0];
     // need to stop the provider from polling eth_getBlockNumber so that the
@@ -27,7 +27,7 @@ describe('Web3', () => {
     after(() => {
       gw.engine.stop();
     });
-  } else if (false && process && process.env && process.env.GATEWAY) {
+  } else if (process && process.env && process.env.GATEWAY) {
     gw = new web3.providers.HttpProvider(process.env.GATEWAY);
     // todo: get address from wallet.
   } else {
@@ -63,7 +63,7 @@ describe('Web3', () => {
         await counterContract.deploy({
           data: artifact.bytecode
         }).send({
-          from: gateway.MALFORMED_SIGNATURE_FROM_ADDRESS,
+          from: gateway.responses.MALFORMED_SIGNATURE_FROM_ADDRESS,
           gasPrice: '0x3b9aca00'
         });
       }
@@ -178,42 +178,79 @@ describe('Web3', () => {
   }).timeout(timeout);
 
   it('should specify an Oasis contract deployment header when sending a deploy transaction', async () => {
-    let client = new web3c(gw);
-    let counterContract = new client.confidential.Contract(artifact.abi, undefined, {
-      from: gateway.OASIS_HEADER_ADDRESS
+    let _web3c = new web3c(gw);
+    let counterContract = new _web3c.confidential.Contract(artifact.abi, undefined, {
+      from: gateway.responses.OASIS_DEPLOY_HEADER_ADDRESS
     });
-	let expectedExpiry = 12343333;
     let instance = await counterContract.deploy({
       data: artifact.bytecode,
       header: {
-        expiry: expectedExpiry,
-        confidential: false
+        expiry: gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY,
+        confidential: true
       }
     }).send();
 
-	let expiry = await instance.expiry();
-	assert.equal(expiry, expectedExpiry);
-	// Bonus: Sanity check other api.
-	expiry = await client.oasis.expiry(instance.options.address);
-	assert.equal(expiry, expectedExpiry);
+    let expiry = await instance.expiry();
+    assert.equal(expiry, gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY);
+    // Bonus: Sanity check other api.
+    expiry = await _web3c.oasis.expiry(instance.options.address);
+    assert.equal(expiry, gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY);
   }).timeout(timeout);
 
   it('should specify an Oasis contract deployment header when estimating gas for a deploy transaction', async () => {
-    let client = new web3c(gw);
-    let counterContract = new client.confidential.Contract(artifact.abi, undefined, {
-      from: gateway.OASIS_HEADER_ADDRESS
+    let _web3c = new web3c(gw);
+    let counterContract = new _web3c.confidential.Contract(artifact.abi, undefined, {
+      from: gateway.responses.OASIS_DEPLOY_HEADER_ADDRESS
     });
 
     let estimate = await counterContract.deploy({
       data: artifact.bytecode,
       header: {
-        expiry: 12343333,
-        confidential: false
+        expiry: gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY,
+        confidential: true
       }
     }).estimateGas();
 
-    assert.equal(estimate, responses.OASIS_DEPLOY_HEADER_GAS);
-  }).timeout(timeout);;
+    assert.equal(estimate, gateway.responses.OASIS_DEPLOY_HEADER_GAS);
+  }).timeout(timeout);
+
+  it('should error when trying to specify non confidential in the confidential namespace', async () => {
+    assert.rejects(
+      async function () {
+        let _web3c = new web3c(gw);
+        let counterContract = new _web3c.confidential.Contract(artifact.abi, undefined, {
+          from: gateway.responses.OASIS_DEPLOY_HEADER_ADDRESS
+        });
+        let instance = await counterContract.deploy({
+          data: artifact.bytecode,
+          header: {
+            expiry: gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY,
+            // This should cause an error.
+            confidential: false
+          }
+        }).send();
+      }
+    );
+  }).timeout(timeout);
+
+  it('should error when trying to specify confidential in the eth namespace', async () => {
+    assert.rejects(
+      async function () {
+        let _web3c = new web3c(gw);
+        let counterContract = new _web3c.eth.Contract(artifact.abi, undefined, {
+          from: gateway.responses.OASIS_DEPLOY_HEADER_ADDRESS
+        });
+        let instance = await counterContract.deploy({
+          data: artifact.bytecode,
+          header: {
+            expiry: gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY,
+            // This should cause an error.
+            confidential: true
+          }
+        }).send();
+      }
+    );
+  }).timeout(timeout);
 
 });
 
