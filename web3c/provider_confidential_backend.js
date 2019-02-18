@@ -6,7 +6,7 @@ const DeployHeader = require('./deploy_header');
  * `eth_sendTransaction` and `eth_call`, and transforms them into confidential
  * transactions and calls.
  */
-class ConfidentialProvider {
+class ProviderConfidentialBackend {
   /**
    * Create a new confidential provider.
    * @param {KeyManager} keymanager The key manager holding the local keypair and
@@ -30,8 +30,16 @@ class ConfidentialProvider {
    * @param callback Function The function to call with the result.
    */
   send(payload, callback) {
-    let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager);
-    if (payload.method === 'eth_sendTransaction') {
+    let transform = new ConfidentialSendTransform(this.manager.provider, this.keymanager, this);
+    if (payload.method === 'eth_sendTransaction' || payload.method === 'eth_estimateGas') {
+      let tx = payload.params[0];
+      if (!tx.to) {
+        try {
+          this.addOasisDeployHeader(tx);
+        } catch (err) {
+          return callback(err, null);
+        }
+      }
       transform.ethSendTransaction(payload, callback, this.outstanding);
     }
     else if (payload.method == 'eth_call') {
@@ -43,14 +51,12 @@ class ConfidentialProvider {
     else if (payload.method == 'eth_getTransactionReceipt') {
       transform.ethTransactionReceipt(payload, callback, this.outstanding);
     }
-    else if (payload.method == 'eth_estimateGas') {
-      transform.ethEstimateGas(payload, callback);
-    }
     else {
       const provider = this.manager.provider;
       return provider[provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
     }
   }
+
   sendBatch(data, callback) {
     // TODO
     return this.manager.sendBatch(data, callback);
@@ -71,49 +77,6 @@ class ConfidentialProvider {
     let pk = logData.substr(0, KeyManager.publicKeyLength()*2 + 2);
     let signature = '0x' + logData.substr(KeyManager.publicKeyLength()*2 + 2);
     return [pk, signature];
-  }
-}
-
-/**
- * Wrap transactions in a confidential channel.
- */
-class ConfidentialSendTransform {
-  constructor(provider, keymanager) {
-    this.provider = provider;
-    this.keymanager = keymanager;
-  }
-
-  ethEstimateGas(payload, callback) {
-    return this.ethSendTransaction(payload, callback, undefined);
-  }
-
-  /**
-   * @param {Object} payload The JSON rpc request being intercepted. Contains the transaction.
-   * @param {Function} callback The function to call with the error and result.
-   * @param {Array?} outstanding The collection of deployed transaction hashes.
-   */
-  ethSendTransaction(payload, callback, outstanding) {
-    const tx = payload.params[0];
-    if (!tx.to) {
-      try {
-        this.addOasisDeployHeader(tx);
-      } catch (err) {
-        return callback(err, null);
-      }
-      return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, res) => {
-        if (!err && outstanding !== undefined) {
-          // track deploy txn hashes to trust them in transaction receipts.
-          outstanding.push(res.result);
-        }
-        callback(err, res);
-      });
-    }
-    this.encryptTx(tx, (err) => {
-      if (err) {
-        return callback(err);
-      }
-      this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
-    });
   }
 
   /**
@@ -138,6 +101,44 @@ class ConfidentialSendTransform {
     // Need to delete the header from the request since it's not a valid part of the web3 rpc spec.
     delete tx.header;
   }
+}
+
+/**
+ * Wrap transactions in a confidential channel.
+ */
+class ConfidentialSendTransform {
+  constructor(provider, keymanager) {
+    this.provider = provider;
+    this.keymanager = keymanager;
+  }
+
+  ethEstimateGas(payload, callback) {
+    return this.ethSendTransaction(payload, callback, undefined);
+  }
+
+  /**
+   * @param {Object} payload The JSON rpc request being intercepted. Contains the transaction.
+   * @param {Function} callback The function to call with the error and result.
+   * @param {Array?} outstanding The collection of deployed transaction hashes.
+   */
+  ethSendTransaction(payload, callback, outstanding) {
+    const tx = payload.params[0];
+    if (!tx.to) {
+      return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, res) => {
+        if (!err && outstanding !== undefined) {
+          // track deploy txn hashes to trust them in transaction receipts.
+          outstanding.push(res.result);
+        }
+        callback(err, res);
+      });
+    }
+    this.encryptTx(tx, (err) => {
+      if (err) {
+        return callback(err);
+      }
+      this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, callback);
+    });
+  }
 
   /**
    *
@@ -151,7 +152,7 @@ class ConfidentialSendTransform {
     for (let i = 0; i < logs.length; i++) {
       if (tryAdd && logs[i].logIndex == 0 && logs[i].topics &&
           logs[i].topics[0] == '0x' + 'f'.repeat(64)) {
-        let [publicKey, signature] = ConfidentialProvider.splitConfidentialDeployLog(logs[i].data);
+        let [publicKey, signature] = ProviderConfidentialBackend.splitConfidentialDeployLog(logs[i].data);
         err = this.keymanager.tryAdd(logs[i].address, publicKey, undefined, signature);
       } else {
         try {
@@ -231,8 +232,7 @@ class ConfidentialSendTransform {
 }
 
 
-module.exports = ConfidentialProvider;
-// expose for testing
+module.exports = ProviderConfidentialBackend;
 module.exports.private = {
   ConfidentialSendTransform
-};
+}

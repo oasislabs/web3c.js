@@ -32,10 +32,10 @@ describe('Web3', () => {
   it('should deploy and transact with a soft wallet', async () => {
     let _web3c = web3cmocksigner(gw);
     let acct = _web3c.eth.accounts.create();
-    _web3c.confidential.defaultAccount = acct.address;
-    _web3c.confidential.accounts.wallet.add(acct);
+    _web3c.oasis.defaultAccount = acct.address;
+    _web3c.oasis.accounts.wallet.add(acct);
 
-    let contract = new _web3c.confidential.Contract(artifact.abi);
+    let contract = new _web3c.oasis.Contract(artifact.abi);
     contract = await contract.deploy({
       data: artifact.bytecode
     }).send({

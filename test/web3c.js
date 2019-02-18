@@ -46,11 +46,11 @@ describe('Web3', () => {
   }
 
   it('should support transient contracts with separate key state', async () => {
-    let firstContract = new (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
-    let secondContract = new (new web3c(gw)).confidential.Contract(artifact.abi, undefined, {saveSession: false});
+    let firstContract = new (new web3c(gw)).oasis.Contract(artifact.abi, undefined, {saveSession: false});
+    let secondContract = new (new web3c(gw)).oasis.Contract(artifact.abi, undefined, {saveSession: false});
 
-    let firstKey = firstContract._requestManager.provider.keymanager.getPublicKey();
-    let secondKey = secondContract._requestManager.provider.keymanager.getPublicKey();
+    let firstKey = firstContract._requestManager.provider.keyManager.getPublicKey();
+    let secondKey = secondContract._requestManager.provider.keyManager.getPublicKey();
     assert.notEqual(firstKey, secondKey);
   }).timeout(timeout);
 
@@ -58,7 +58,7 @@ describe('Web3', () => {
     await assert.rejects(
       async function () {
         let _web3c = new web3c(gw);
-        let counterContract = new _web3c.confidential.Contract(artifact.abi);
+        let counterContract = new _web3c.oasis.Contract(artifact.abi);
         await counterContract.deploy({
           data: artifact.bytecode
         }).send({
@@ -73,21 +73,21 @@ describe('Web3', () => {
     await assert.rejects(
       async function () {
         let _web3c = new web3c(gw);
-        let contract = new _web3c.confidential.Contract(artifact.abi);
+        let contract = new _web3c.oasis.Contract(artifact.abi);
         contract = await contract.deploy({
           data: artifact.bytecode
         }).send({
           from: address,
           gasPrice: '0x3b9aca00'
         });
-        await _web3c.confidential.getPublicKey(contract.options.address);
+        await _web3c.oasis.getPublicKey(contract.options.address);
       }
     );
   });
 
   it('should retrieve contract keys from a previously deployed contract address', async function() {
     let _web3c = web3cMockSigner(gw);
-    let counterContract = new _web3c.confidential.Contract(artifact.abi);
+    let counterContract = new _web3c.oasis.Contract(artifact.abi);
     try {
       let contract = await counterContract.deploy({
         data: artifact.bytecode
@@ -95,7 +95,7 @@ describe('Web3', () => {
         from: address,
         gasPrice: '0x3b9aca00'
       });
-      let key = await _web3c.confidential.getPublicKey(contract.options.address);
+      let key = await _web3c.oasis.getPublicKey(contract.options.address);
       assert.equal(64 + 2, key.public_key.length);
     } catch (e) {
       assert.fail(e);
@@ -104,7 +104,7 @@ describe('Web3', () => {
 
   it('should deploy a confidential counter contract', async () => {
     let _web3c = web3cMockSigner(gw);
-    let counterContract = new _web3c.confidential.Contract(artifact.abi);
+    let counterContract = new _web3c.oasis.Contract(artifact.abi);
     try {
       await counterContract.deploy({
         data: artifact.bytecode
@@ -120,7 +120,7 @@ describe('Web3', () => {
   it('should estimate gas for confidential transactions', async () => {
     const _web3c = (new web3c(gw));
 
-    let counterContract = new _web3c.confidential.Contract(artifact.abi);
+    let counterContract = new _web3c.oasis.Contract(artifact.abi);
     const deployMethod = counterContract.deploy({data: artifact.bytecode});
     let estimatedGas = await deployMethod.estimateGas();
     assert.equal(estimatedGas, '0xe1bd');
@@ -128,7 +128,7 @@ describe('Web3', () => {
 
   it('should execute transactions and calls', async () => {
     let _web3c = web3cMockSigner(gw);
-    let counterContract = new _web3c.confidential.Contract(artifact.abi);
+    let counterContract = new _web3c.oasis.Contract(artifact.abi);
     let instance;
     try {
       instance = await counterContract.deploy({
@@ -151,7 +151,7 @@ describe('Web3', () => {
 
   it('should get confidential getPastLogs logs', async () => {
     let client = web3cMockSigner(gw);
-    let counterContract = new client.confidential.Contract(artifact.abi);
+    let counterContract = new client.oasis.Contract(artifact.abi);
     let instance;
     try {
       instance = await counterContract.deploy({
@@ -178,7 +178,7 @@ describe('Web3', () => {
 
   it('should specify an Oasis contract deployment header when sending a deploy transaction', async () => {
     let _web3c = new web3c(gw);
-    let counterContract = new _web3c.confidential.Contract(artifact.abi, undefined, {
+    let counterContract = new _web3c.oasis.Contract(artifact.abi, undefined, {
       from: gateway.responses.OASIS_DEPLOY_HEADER_ADDRESS
     });
     let instance = await counterContract.deploy({
@@ -198,7 +198,7 @@ describe('Web3', () => {
 
   it('should specify an Oasis contract deployment header when estimating gas for a deploy transaction', async () => {
     let _web3c = new web3c(gw);
-    let counterContract = new _web3c.confidential.Contract(artifact.abi, undefined, {
+    let counterContract = new _web3c.oasis.Contract(artifact.abi, undefined, {
       from: gateway.responses.OASIS_DEPLOY_HEADER_ADDRESS
     });
 
@@ -213,24 +213,38 @@ describe('Web3', () => {
     assert.equal(estimate, gateway.responses.OASIS_DEPLOY_HEADER_GAS);
   }).timeout(timeout);
 
-  it('should error when trying to specify non confidential in the confidential namespace', async () => {
-    assert.rejects(
-      async function () {
-        let _web3c = new web3c(gw);
-        let counterContract = new _web3c.confidential.Contract(artifact.abi, undefined, {
-          from: gateway.responses.OASIS_DEPLOY_HEADER_ADDRESS
-        });
-        let instance = await counterContract.deploy({
-          data: artifact.bytecode,
-          header: {
-            expiry: gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY,
-            // This should cause an error.
-            confidential: false
-          }
-        }).send();
+  // Deployed non-confidential contract for the following tests.
+  let plaintextInstance;
+
+  it('should deploy a non confidential contract in the oasis namespace', async () => {
+    let _web3c = new web3c(gw);
+    let counterContract = new _web3c.oasis.Contract(artifact.abi, undefined, {
+      from: gateway.responses.OASIS_DEPLOY_HEADER_PLAINTEXT_ADDRESS
+    });
+    plaintextInstance = await counterContract.deploy({
+      data: artifact.bytecode,
+      header: {
+        expiry: gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY,
+        confidential: false
       }
-    );
+    }).send({ gas: '0x10000' });
+
+	assert.equal(
+	  plaintextInstance.options.address.toLowerCase(),
+	  gateway.responses.OASIS_DEPLOY_PLAINTEXT_TX_RECEIPT.contractAddress
+	);
   }).timeout(timeout);
+
+  it('should send a transaction to a non confidential contract in the oasis namespace', async () => {
+    const receipt = await plaintextInstance.methods.incrementCounter().send({
+      from: address,
+      gasPrice: '0x3b9aca00',
+	  gas: '0x10000'
+    });
+	assert.equal(receipt.transactionHash, gateway.responses.OASIS_PLAINTEXT_TX_HASH);
+
+  }).timeout(timeout);
+
 });
 
 /**
@@ -242,8 +256,8 @@ function web3cMockSigner(gw) {
   };
   let _web3c = new web3c(gw);
 
-  _web3c.confidential.getPublicKey.method.outputFormatter = (t) => t;
-  _web3c.confidential.keyManager.signer = mockSigner;
+  _web3c.oasis.getPublicKey.method.outputFormatter = (t) => t;
+  _web3c.oasis.keyManager.signer = mockSigner;
 
   return _web3c;
 }

@@ -27,7 +27,6 @@ const onReq = function (req, res) {
 };
 
 async function handleRequest (req) {
-
   let obj = {
     'jsonrpc': '2.0',
     'id': req.id,
@@ -73,12 +72,19 @@ async function handleRequest (req) {
         obj.result = responses.MALFORMED_SIGNATURE_DEPLOY_TX_HASH;
       }
       // Testing the oasis deployment header.
-      else if (req.params[0].from == responses.OASIS_DEPLOY_HEADER_ADDRESS) {
+      else if (req.params[0].from === responses.OASIS_DEPLOY_HEADER_ADDRESS) {
         try {
           validateHeader(req.params[0].data);
           obj.result = responses.OASIS_DEPLOY_HEADER_TX_HASH;
         } catch (e) {
           obj.result = `error: ${e}`;
+        }
+      } else if (req.params[0].from === responses.OASIS_DEPLOY_HEADER_PLAINTEXT_ADDRESS) {
+        let header = DeployHeaderHexReader.header(req.params[0].data);
+        if (header.body.confidential === false) {
+          obj.result = responses.OASIS_DEPLOY_HEADER_PLAINTEXT_TX_HASH;
+        } else {
+          obj.result = 'error';
         }
       } else if (!encdata.startsWith(DeployHeader.prefix())) {
         // "\0enc"
@@ -87,6 +93,8 @@ async function handleRequest (req) {
         // send a arbitrary txn hash.
         obj.result = responses.CONFIDENTIAL_DEPLOY_TX_HASH;
       }
+	} else if (req.params[0].to === responses.OASIS_DEPLOY_PLAINTEXT_TX_RECEIPT.contractAddress) {
+	  obj.result = responses.OASIS_PLAINTEXT_TX_HASH;
     } else {
       // Transact
       try {
@@ -114,7 +122,11 @@ async function handleRequest (req) {
       };
     } else if (req.params[0] == responses.OASIS_DEPLOY_HEADER_TX_HASH) {
       obj.result = responses.OASIS_DEPLOY_TX_RECEIPT;
-    }
+    } else if (req.params[0] === responses.OASIS_DEPLOY_HEADER_PLAINTEXT_TX_HASH) {
+      obj.result = responses.OASIS_DEPLOY_PLAINTEXT_TX_RECEIPT;
+    } else if (req.params[0] === responses.OASIS_PLAINTEXT_TX_HASH) {
+	  obj.result = responses.OASIS_PLAINTEXT_TX_RECEIPT;
+	}
   } else if (req.method == 'eth_getCode') {
     obj.result = artifact.bytecode;
   } else if (req.method == 'eth_getLogs') {

@@ -23,7 +23,7 @@ describe('Key Manager', function() {
   });
 
   let mock_web3 = {
-    confidential: {
+    oasis: {
       getPublicKey: (addr, cb) => {
         cb(null, {
           public_key: 'stkey',
