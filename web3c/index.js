@@ -1,6 +1,6 @@
 /* globals Web3 */
-const Confidential = require('./confidential');
 const MraeBox = require('../crypto/subtle/mrae_box');
+const Oasis = require('./oasis');
 
 let localWeb3 = undefined;
 
@@ -15,7 +15,7 @@ let rejectWeb3 = () => {};
 module.exports = function (provider) {
   localWeb3.call(this, provider);
   if (this.version && !this.version.api) { // v1.0 series
-    this.confidential = new Confidential(this, localStorage, MraeBox);
+    this.oasis = new Oasis(this, localStorage, MraeBox);
   } else {
     throw new Error('Unexpected web3 version. Web3c Expects Web3 1.0');
   }

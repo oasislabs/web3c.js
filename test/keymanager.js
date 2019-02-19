@@ -23,7 +23,7 @@ describe('Key Manager', function() {
   });
 
   let mock_web3 = {
-    confidential: {
+    oasis: {
       getPublicKey: (addr, cb) => {
         cb(null, {
           public_key: 'stkey',
@@ -63,18 +63,18 @@ describe('Key Manager', function() {
 
     // Load shorterm key from web3
     let ret = null;
-    km.get('that', (key) => {ret = key;});
+    km.get('that', (err, key) => {ret = key;});
     assert.equal(ret, 'stkey');
 
     // reloading should work
     ret = null;
-    km.get('that', (key) => {ret = key;});
+    km.get('that', (err, key) => {ret = key;});
     assert.equal(ret, 'stkey');
 
     // trying to get local key should fail.
     ret = null;
     assert.throws(() => {
-      km.get('me', (key) => {ret = key;});
+      km.get('me', (err, key) => {ret = key;});
     })
     assert.equal(ret, null);
 
