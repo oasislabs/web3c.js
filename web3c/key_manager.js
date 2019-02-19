@@ -84,7 +84,7 @@ class KeyManager {
   /**
    * Get a short term key for a given contract.
    * @param {String} address Address the contract to request a key for
-   * @param {Function} callback Function callback provided either a key or error
+   * @param {Function} callback Function callback take two parameters (error, key).
    */
   get(address, callback) {
     address = address.toLowerCase();
@@ -96,7 +96,7 @@ class KeyManager {
       data = JSON.parse(data);
       // TODO: check timestamp expiry.
       if (data && data.shorterm) {
-        return callback(data.shorterm);
+        return callback(null, data.shorterm);
       }
     }
     this._web3.oasis.getPublicKey(address, this.onKey.bind(this, address, callback));
@@ -117,12 +117,16 @@ class KeyManager {
    * @param {Object} response the response from the web3 gateway with short term key.
    */
   onKey(address, cb, err, response) {
-    if (err !== null) {
+    if (err) {
       return cb(err);
     }
     address = address.toLowerCase();
     if (address == LOCAL_KEY) {
       throw new Error('invalid contract address');
+    }
+    // No public key since `address` is not confidential.
+    if (!response) {
+      return cb(null, response);
     }
     if (typeof response.public_key !== 'string') {
       response.public_key = bytes.toHex(response.public_key);
@@ -130,7 +134,7 @@ class KeyManager {
 
     let data = this._db.getItem(address);
     if (data === undefined || data == null) {
-      return cb(response.public_key);
+      return cb(null, response.public_key);
     }
     data = JSON.parse(data);
     // TODO: check if response is an error.
@@ -142,7 +146,7 @@ class KeyManager {
     data.shortterm = response.public_key;
     data.timestamp = response.timestamp;
     this._db.setItem(address, JSON.stringify(data));
-    cb(response.public_key);
+    cb(null, response.public_key);
   }
 
   /**

@@ -96,9 +96,11 @@ class Oasis {
       }
 
       if (address) {
-        keymanager.get(address, (public_key) => {
-          // TODO: update once peter merges in PR to turn error into an option.
-          if (typeof public_key === 'object') {
+        keymanager.get(address, (err, public_key) => {
+          if (err) {
+            throw new Error(`${err}`);
+          }
+          if (!public_key) {
             provider.selectBackend({ confidential: false });
           }
         });
@@ -116,27 +118,30 @@ class Oasis {
       // Transaction to existing address, so we check it's confidential by asking the key manager.
       if (tx.to) {
         return new Promise((resolve, reject) => {
-          keyManager.get(tx.to, function (publicKey) {
-            // Confidential transaction, so encrypt it.
-            if (typeof public_key !== 'object') {
-              const transformer = new ProviderConfidentialBackend.private.ConfidentialSendTransform(
-                web3._requestManager.provider,
-                keyManager
-              );
-              transformer.encryptTx(tx, function finishSignConfidentialTransaction(err) {
-                if (err) {
-                  reject(err);
-                }
-                try {
-                  return wrappedSigner(tx, from).then(resolve, reject);
-                } catch (e) {
-                  reject(e);
-                }
-              });
-              // Non-confidential so do nothing.
-            } else {
+          keyManager.get(tx.to, function (err, publicKey) {
+            if (err) {
+              return reject(err);
+            }
+            // Non-confidential so do nothing.
+            if (!publicKey) {
               return wrappedSigner(tx, from);
             }
+
+            const transformer = new ProviderConfidentialBackend.private.ConfidentialSendTransform(
+              web3._requestManager.provider,
+              keyManager
+            );
+            transformer.encryptTx(tx, function finishSignConfidentialTransaction(err) {
+              if (err) {
+                reject(err);
+              }
+              try {
+                return wrappedSigner(tx, from).then(resolve, reject);
+              } catch (e) {
+                reject(e);
+              }
+            });
+
           });
         });
       }
@@ -161,6 +166,10 @@ class OasisUtils {
 }
 
 function getPublicKeyOutputFormatter (t) {
+  // We called oasis_getPublicKey on a non-confidential contract.
+  if (!t) {
+    return t;
+  }
   let signer = new Signer(KeyManager.publicKey());
   let err = signer.verify(t.signature, t.public_key, t.timestamp);
   if (err) {
