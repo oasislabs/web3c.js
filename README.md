@@ -10,7 +10,7 @@ attach the confidentiality extension onto your existing use of Web3.
 $ npm install --save web3c
 ```
 
-For convenience, we automatically build the latest version of the library here:
+For convenience, we automatically build the latest version of the library here:  
 [https://cdn.oasiscloud.io/web3c-latest/web3c.js](https://cdn.oasiscloud.io/web3c-latest/web3c.js)
 
 ### Creating a new Web3c Project
