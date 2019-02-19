@@ -12,7 +12,7 @@
  *          Contract constructor, for example { saveSession: false } for confidential
  *          contracts.
  */
-function  makeContractFactory(web3, providerFn) {
+function makeContractFactory(web3, providerFn) {
   let EthContract = web3.eth.Contract;
   /**
    * @param {Object} abi
@@ -20,8 +20,11 @@ function  makeContractFactory(web3, providerFn) {
    * @param {Object} options
    * @param {String} options.key The longterm key of the contract.
    * @param {bool}   options.saveSession false to disable storing keys.
+   * @param {OasisProvider?} provider is provided iff the clone method has been called. This
+   *        is used in the case where we have deployed an OasisContract via `send` and we want
+   *        to return a new version of the OasisContract with the same provider set.
    */
-  return function OasisEthContract(abi, address, options) {
+  return function OasisContract(abi, address, options, provider) {
     let c = new EthContract(abi, address, options);
 
     Object.assign(this, c);
@@ -31,17 +34,25 @@ function  makeContractFactory(web3, providerFn) {
     this.defaultAccount = c.constructor.defaultAccount;
     this.defaultBlock = c.constructor.defaultBlock || 'latest';
 
-    c.setProvider.call(this, providerFn(options));
+	if (!provider) {
+      provider = providerFn(address, options);
+    }
+
+    c.setProvider.call(this, provider);
 
     this.clone = () => {
-      return new OasisEthContract(this.options.jsonInterface, this.options.address, this.options);
+      return new OasisContract(this.options.jsonInterface, this.options.address, this.options, provider);
     };
     // Hook deploy so that we can pass in the Oasis contract deployment header
     // as an extra argument. For example, contract.deploy({ data, header: { expiry } });
     // To do this, we need to also hook into all the methods available on the returned
     // tx object so that we can pass in such deploy options into them.
     this.deploy = (deployOptions, callback) => {
-      deployOptions = Object.assign({}, deployOptions);
+      deployOptions = deployOptions || {};
+
+      // Configure the provider to be confidential (or not) based upon the contract's deploy header.
+      provider.selectBackend(deployOptions.header);
+
       // Create the txObject that we want to patch and return.
       let txObject = c.deploy.call(this, deployOptions, callback);
 

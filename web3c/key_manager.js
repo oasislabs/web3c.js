@@ -99,7 +99,7 @@ class KeyManager {
         return callback(data.shorterm);
       }
     }
-    this._web3.confidential.getPublicKey(address, this.onKey.bind(this, address, callback));
+    this._web3.oasis.getPublicKey(address, this.onKey.bind(this, address, callback));
   }
 
   /**
