@@ -69,7 +69,7 @@ describe('Web3', () => {
     );
   });
 
-  it('should error if a malformed signature is returned from confidential_getPublicKey', async () => {
+  it('should error if a malformed signature is returned from oasis_getPublicKey', async () => {
     await assert.rejects(
       async function () {
         let _web3c = new web3c(gw);

@@ -34,14 +34,14 @@ class Oasis {
       // Second parameter - the long-term key - is intercepted by the provider.
       new web3.extend.Method({
         name: 'getPublicKey',
-        call: 'confidential_getPublicKey',
+        call: 'oasis_getPublicKey',
         params: 1,
         inputFormatter: [web3.extend.formatters.inputAddressFormatter],
         outputFormatter: getPublicKeyOutputFormatter
       }),
       new web3.extend.Method({
         name: 'call',
-        call: 'confidential_call_enc',
+        call: 'oasis_call_enc',
         params: 2,
         inputFormatter: [
           web3.extend.formatters.inputCallFormatter,
