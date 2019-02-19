@@ -38,7 +38,7 @@ async function handleRequest (req) {
     'secretKey': '0x263357bd55c11524811cccf8c9303e3298dd71abeb1b20f3ea7db07655dba9e9',
     'publicKey': '0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a'
   }));
-  if (req.method == 'confidential_getPublicKey') {
+  if (req.method == 'oasis_getPublicKey') {
     // If requesting public key for a contract that doesn't exist, then we should not
     // provide a valid response, so exit.
     if (req.params[0] == '0x0000000000000000000000000000000000000000') {
@@ -49,13 +49,13 @@ async function handleRequest (req) {
       'timestamp': web3.utils.toHex((new Date()).valueOf()),
       'signature': '0x0',
     };
-  } else if (req.method == 'confidential_call_enc') {
+  } else if (req.method == 'oasis_call_enc') {
     let encdata = req.params[0].data;
     // slice out the key: 0x || nonce || public_key || cypher
     let pubKeyStart = 2 + 32;
     let pubKeyEnd = pubKeyStart + 64;
     if (encdata.length < pubKeyEnd) {
-      throw 'invalid confidential_call_enc data field';
+      throw 'invalid oasis_call_enc data field';
     }
     let pubKey = encdata.substring(pubKeyStart, pubKeyEnd);
     obj.result = await manager.encrypt('0x0000000000000000000000000000000000000000000000000000000000000001', pubKey);
@@ -90,7 +90,6 @@ async function handleRequest (req) {
         // "\0enc"
         obj.result = 'error';
       } else {
-        // send a arbitrary txn hash.
         obj.result = responses.CONFIDENTIAL_DEPLOY_TX_HASH;
       }
 	} else if (req.params[0].to === responses.OASIS_DEPLOY_PLAINTEXT_TX_RECEIPT.contractAddress) {

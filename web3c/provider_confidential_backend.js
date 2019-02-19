@@ -197,7 +197,7 @@ class ConfidentialSendTransform {
       if (err) {
         return callback(err);
       }
-      payload.method = 'confidential_call_enc';
+      payload.method = 'oasis_call_enc';
       this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
         if (!resp.result || err) {
           callback(err, resp);
