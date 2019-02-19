@@ -92,8 +92,8 @@ async function handleRequest (req) {
       } else {
         obj.result = responses.CONFIDENTIAL_DEPLOY_TX_HASH;
       }
-	} else if (req.params[0].to === responses.OASIS_DEPLOY_PLAINTEXT_TX_RECEIPT.contractAddress) {
-	  obj.result = responses.OASIS_PLAINTEXT_TX_HASH;
+    } else if (req.params[0].to === responses.OASIS_DEPLOY_PLAINTEXT_TX_RECEIPT.contractAddress) {
+      obj.result = responses.OASIS_PLAINTEXT_TX_HASH;
     } else {
       // Transact
       try {
@@ -124,8 +124,8 @@ async function handleRequest (req) {
     } else if (req.params[0] === responses.OASIS_DEPLOY_HEADER_PLAINTEXT_TX_HASH) {
       obj.result = responses.OASIS_DEPLOY_PLAINTEXT_TX_RECEIPT;
     } else if (req.params[0] === responses.OASIS_PLAINTEXT_TX_HASH) {
-	  obj.result = responses.OASIS_PLAINTEXT_TX_RECEIPT;
-	}
+      obj.result = responses.OASIS_PLAINTEXT_TX_RECEIPT;
+    }
   } else if (req.method == 'eth_getCode') {
     obj.result = artifact.bytecode;
   } else if (req.method == 'eth_getLogs') {

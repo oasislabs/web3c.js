@@ -219,7 +219,10 @@ class ConfidentialSendTransform {
    * @param callback Function
    */
   encryptTx(tx, callback) {
-    return this.keymanager.get(tx.to, (key) => {
+    return this.keymanager.get(tx.to, (err, key) => {
+      if (err) {
+        callback(err);
+      }
       if (typeof key !== 'string') { // error
         return callback(key);
       }

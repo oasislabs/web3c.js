@@ -229,19 +229,19 @@ describe('Web3', () => {
       }
     }).send({ gas: '0x10000' });
 
-	assert.equal(
-	  plaintextInstance.options.address.toLowerCase(),
-	  gateway.responses.OASIS_DEPLOY_PLAINTEXT_TX_RECEIPT.contractAddress
-	);
+    assert.equal(
+      plaintextInstance.options.address.toLowerCase(),
+      gateway.responses.OASIS_DEPLOY_PLAINTEXT_TX_RECEIPT.contractAddress
+    );
   }).timeout(timeout);
 
   it('should send a transaction to a non confidential contract in the oasis namespace', async () => {
     const receipt = await plaintextInstance.methods.incrementCounter().send({
       from: address,
       gasPrice: '0x3b9aca00',
-	  gas: '0x10000'
+      gas: '0x10000'
     });
-	assert.equal(receipt.transactionHash, gateway.responses.OASIS_PLAINTEXT_TX_HASH);
+    assert.equal(receipt.transactionHash, gateway.responses.OASIS_PLAINTEXT_TX_HASH);
 
   }).timeout(timeout);
 
