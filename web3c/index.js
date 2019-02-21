@@ -1,5 +1,11 @@
 /* globals Web3 */
-const MraeBox = require('../crypto/subtle/mrae_box');
+let MraeBox = undefined;
+if (typeof window === 'undefined' ) {
+  MraeBox = require('../crypto/node/mrae_box');
+} else {
+  MraeBox = require('../crypto/subtle/mrae_box');
+}
+
 const Oasis = require('./oasis');
 
 let localWeb3 = undefined;
@@ -11,11 +17,23 @@ let rejectWeb3 = () => {};
 /**
  * Web3c is a wrapper that can be invoked in the same way as Web3.
  * Expects Web3 v1.0
+ *
+ * @param {Object} provider is an object conforming to the web3 provider interface.
+ * @param {Object?} web3 is an optional web3 object to override the localWeb3.
  */
-module.exports = function (provider) {
+module.exports = function (provider, web3) {
+  if (web3) {
+    localWeb3 = web3;
+  }
+
+  let storage = undefined;
+  if (typeof localStorage !== 'undefined') {
+    storage = localStorage;
+  }
+
   localWeb3.call(this, provider);
   if (this.version && !this.version.api) { // v1.0 series
-    this.oasis = new Oasis(this, localStorage, MraeBox);
+    this.oasis = new Oasis(this, storage, MraeBox);
   } else {
     throw new Error('Unexpected web3 version. Web3c Expects Web3 1.0');
   }
