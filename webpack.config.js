@@ -29,11 +29,7 @@ module.exports = env => {
         path.resolve(__dirname, 'crypto'),
         path.resolve(__dirname, 'web3c')
       ],
-      extensions: ['.js'],
-      alias: {
-        '../crypto/node': '../crypto/subtle',
-        './crypto/node': './crypto/subtle',
-      }
+      extensions: ['.js']
     },
     output: {
       path: path.join(__dirname, 'output'),
