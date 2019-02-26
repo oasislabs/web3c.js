@@ -1,8 +1,10 @@
+const EventEmitter = require('events');
 const DeployHeader = require('./deploy_header');
 const KeyManager = require('./key_manager');
 const Signer = require('./signer');
 const OasisProvider = require('./oasis_provider');
 const ProviderConfidentialBackend = require('./provider_confidential_backend');
+const ConfidentialSendTransform = ProviderConfidentialBackend.private.ConfidentialSendTransform;
 const makeContractFactory = require('./contract_factory');
 
 /**
@@ -21,6 +23,7 @@ class Oasis {
     this._setupRpcs(web3);
     this._setupContract(web3, storage, mraebox);
     this._setupWrappedAccounts(web3);
+    this._setupSubscribe(web3);
   }
 
   /**
@@ -77,14 +80,10 @@ class Oasis {
    * all outgoing/incoming requests according to the web3c spec.
    */
   _setupContract(web3, storage, mraebox) {
-    // Save `this` so that we can refer to it and its properties inside `ConfidentialContract`.
-    // Otherwise `this` is overridden when `new` is used in `new Contract`.
-    let self = this;
-
     this.Contract = makeContractFactory(web3, (address, options) => {
       let provider = new OasisProvider(this.keyManager, web3._requestManager);
 
-      let keymanager = self.keyManager;
+      let keymanager = this.keyManager;
 
       if (options && options.saveSession === false) {
         keymanager = new KeyManager(web3, undefined, mraebox);
@@ -96,13 +95,10 @@ class Oasis {
       }
 
       if (address) {
-        keymanager.get(address, (err, public_key) => {
-          if (err) {
-            throw new Error(`${err}`);
-          }
-          if (!public_key) {
-            provider.selectBackend({ confidential: false });
-          }
+        this.isConfidential(address).then((isConfidential) => {
+          provider.selectBackend({ confidential: isConfidential });
+        }).catch((err) => {
+          throw new Error(`${err}`);
         });
       }
 
@@ -114,34 +110,27 @@ class Oasis {
     let accounts = web3.eth.accounts;
     let wrappedSigner = accounts.signTransaction.bind(accounts);
     let keyManager = this.keyManager;
-    accounts.signTransaction = function(tx, from) {
+    accounts.signTransaction = (tx, from) => {
       // Transaction to existing address, so we check it's confidential by asking the key manager.
       if (tx.to) {
-        return new Promise((resolve, reject) => {
-          keyManager.get(tx.to, function (err, publicKey) {
+        return new Promise(async (resolve, reject) => {
+          if (!await this.isConfidential(tx.to)) {
+            return wrappedSigner(tx, from);
+          }
+
+          const transformer = new ProviderConfidentialBackend.private.ConfidentialSendTransform(
+            web3._requestManager.provider,
+            keyManager
+          );
+          transformer.encryptTx(tx, function finishSignConfidentialTransaction(err) {
             if (err) {
-              return reject(err);
+              reject(err);
             }
-            // Non-confidential so do nothing.
-            if (!publicKey) {
-              return wrappedSigner(tx, from);
+            try {
+              return wrappedSigner(tx, from).then(resolve, reject);
+            } catch (e) {
+              reject(e);
             }
-
-            const transformer = new ProviderConfidentialBackend.private.ConfidentialSendTransform(
-              web3._requestManager.provider,
-              keyManager
-            );
-            transformer.encryptTx(tx, function finishSignConfidentialTransaction(err) {
-              if (err) {
-                reject(err);
-              }
-              try {
-                return wrappedSigner(tx, from).then(resolve, reject);
-              } catch (e) {
-                reject(e);
-              }
-            });
-
           });
         });
       }
@@ -154,8 +143,75 @@ class Oasis {
     this.accounts = accounts;
   }
 
+  _setupSubscribe(web3) {
+    this.subscribe = (subscription, options, callback) => {
+      // Only try to decrypt logs.
+      if (subscription !== 'logs') {
+        return web3.eth.subscribe(subscription, options, callback);
+      }
+
+      let wrappedEmitter = new EventEmitter();
+
+      let decryptSubscriptionLog = async (msg, log) => {
+        try {
+          if (await this.isConfidential(log.address)) {
+            let transform = new ConfidentialSendTransform(null, this.keyManager);
+            await transform.tryDecryptLogs([log], false);
+            wrappedEmitter.emit(msg, log);
+          } else {
+            wrappedEmitter.emit(msg, log);
+          }
+        } catch (err) {
+          wrappedEmitter.emit('error', err);
+        }
+      };
+
+      let wrappedCallback = undefined;
+      if (callback) {
+        wrappedCallback = async (err, log) => {
+          if (err) {
+            return callback(err);
+          }
+          if (await this.isConfidential(log.address)) {
+            let transform = new ConfidentialSendTransform(null, this.keyManager);
+            await transform.tryDecryptLogs([log], false);
+            return callback(null, log);
+          } else {
+            return callback(null, log);
+          }
+        };
+      }
+
+      web3
+        .eth
+        .subscribe(subscription, options, wrappedCallback)
+        .on('data', decryptSubscriptionLog.bind(this, 'data'))
+        .on('changed', decryptSubscriptionLog.bind(this, 'changed'))
+        .on('error', (err) => {
+          wrappedEmitter.emit('error', err);
+        });
+
+      return wrappedEmitter;
+    };
+  }
+
   resetKeymanager() {
     this.keyManager.reset();
+  }
+
+  /**
+   * @returns true iff the contract at address is confidential.
+   */
+  isConfidential(address) {
+    return new Promise((resolve, reject) => {
+      this.keyManager.get(address, (err, publicKey) => {
+        if (err) {
+          reject(err);
+        }
+        let confidential = publicKey !== null && publicKey !== undefined;
+        resolve(confidential);
+      });
+    });
   }
 }
 
