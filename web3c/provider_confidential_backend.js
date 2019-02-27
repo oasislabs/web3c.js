@@ -126,7 +126,7 @@ class ConfidentialSendTransform {
     if (!tx.to) {
       return this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, res) => {
         if (!err && outstanding !== undefined) {
-          // track deploy txn hashes to trust them in transaction receipts.
+          // Track deploy txn hashes to trust them in transaction receipts.
           outstanding.push(res.result);
         }
         callback(err, res);
