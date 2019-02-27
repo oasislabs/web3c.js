@@ -1,43 +1,62 @@
 /* globals Web3 */
-let MraeBox = undefined;
-if (typeof window === 'undefined' ) {
-  MraeBox = require('../crypto/node/mrae_box');
-} else {
-  MraeBox = require('../crypto/subtle/mrae_box');
-}
-
 const Oasis = require('./oasis');
 
 let localWeb3 = undefined;
-
-// These are over-ridden by module.exports.Promise below.
-let resolveWeb3 = () => {};
-let rejectWeb3 = () => {};
 
 /**
  * Web3c is a wrapper that can be invoked in the same way as Web3.
  * Expects Web3 v1.0
  *
  * @param {Object} provider is an object conforming to the web3 provider interface.
- * @param {Object?} web3 is an optional web3 object to override the localWeb3.
+ * @param {Object?} web3 is an optional web3 object to override localWeb3.
+ * @param {String} options is a set of options containing configurations to web3c.
+ *                 Currently the only key is keyManagerPublicKey, an optional hex
+ *                 string to configure the remote key manager for signature validation.
  */
-module.exports = function (provider, web3) {
+module.exports = function (provider, web3, options) {
   if (web3) {
     localWeb3 = web3;
   }
-
-  let storage = undefined;
-  if (typeof localStorage !== 'undefined') {
-    storage = localStorage;
-  }
-
   localWeb3.call(this, provider);
-  if (this.version && !this.version.api) { // v1.0 series
-    this.oasis = new Oasis(this, storage, MraeBox);
-  } else {
+
+  if (!this.version || this.version.api) {
     throw new Error('Unexpected web3 version. Web3c Expects Web3 1.0');
   }
+
+  this.oasis = new Oasis(buildOptions(this, options));
 };
+
+/**
+ * Builds Oasis options.
+ * @param {Object}  web3 is the underlying web3 object to use.
+ * @param {Object?} options is the configuration
+ * @returns         the options used to construct the Oasis namespace.
+ */
+function buildOptions(web3, options) {
+  options = options || {};
+
+  options.web3 = web3;
+
+  if (!options.mraebox) {
+    if (typeof window === 'undefined' ) {
+      options.mraebox = require('../crypto/node/mrae_box');
+    } else {
+      options.mraebox = require('../crypto/subtle/mrae_box');
+    }
+  }
+
+  if (!options.storage) {
+    if (typeof localStorage !== 'undefined') {
+      options.storage = localStorage;
+    }
+  }
+
+  return options;
+}
+
+// These are over-ridden by module.exports.Promise below.
+let resolveWeb3 = () => {};
+let rejectWeb3 = () => {};
 
 /**
  * Web3.Promise provides a hook for ensuring the library is fully used,

@@ -9,30 +9,48 @@ const makeContractFactory = require('./contract_factory');
 
 /**
  * Oasis
+ *
  * This module exports the `web3.oasis` namespace. It defines the parameters
  * of the raw underlying web3 methods added to the web3 protocol, and exposes
  * the Oasis contract interface by creating an extended verison of web3.eth.Contract
  * with the ability to deploy with custom header speciying properties like
  * condientiality and expiry.
+ *
+ * @param {Object} options is the set of arguments to configure the Oasis namespace.
+ *                 Required: web3, storage, mrae.
+ *                 Optional: keyManagerPublicKey.
  */
 class Oasis {
 
-  constructor(web3, storage, mraebox) {
-    this.keyManager = new KeyManager(web3, storage, mraebox);
+  constructor(options) {
     this.utils = new OasisUtils();
-    this._setupRpcs(web3);
-    this._setupContract(web3, storage, mraebox);
-    this._setupWrappedAccounts(web3);
-    this._setupSubscribe(web3);
+    this._setupKeyManager(options);
+    this._setupRpcs(options);
+    this._setupContract(options);
+    this._setupWrappedAccounts(options);
+    this._setupSubscribe(options);
+  }
+
+  _setupKeyManager(options) {
+    let signer = undefined;
+    if (options.keyManagerPublicKey) {
+      signer = new Signer(options.keyManagerPublicKey);
+    }
+    this.keyManager = new KeyManager(
+      options.web3,
+      options.storage,
+      options.mraebox,
+      signer
+    );
   }
 
   /**
    * Creates methods on the confidential namespace that make requests to the oasis_*
    * web3c rpc endpoints. For example, one may do `web3c.oasis.getPublicKey(address)`.
-   *
-   * @param {Object} web3 is a web3 object.
    */
-  _setupRpcs(web3) {
+  _setupRpcs(options) {
+    let web3 = options.web3;
+
     let methods = [
       // Second parameter - the long-term key - is intercepted by the provider.
       new web3.extend.Method({
@@ -40,7 +58,7 @@ class Oasis {
         call: 'oasis_getPublicKey',
         params: 1,
         inputFormatter: [web3.extend.formatters.inputAddressFormatter],
-        outputFormatter: getPublicKeyOutputFormatter
+        outputFormatter: (pk) => getPublicKeyOutputFormatter(pk, options)
       }),
       new web3.extend.Method({
         name: 'call',
@@ -79,19 +97,25 @@ class Oasis {
    * confidentiality. If confidentiality is set, then transparently encrypts/decrypts
    * all outgoing/incoming requests according to the web3c spec.
    */
-  _setupContract(web3, storage, mraebox) {
-    this.Contract = makeContractFactory(web3, (address, options) => {
+  _setupContract(options) {
+    let web3 = options.web3;
+
+    this.Contract = makeContractFactory(web3, (address, contractOptions) => {
       let provider = new OasisProvider(this.keyManager, web3._requestManager);
 
       let keymanager = this.keyManager;
 
-      if (options && options.saveSession === false) {
-        keymanager = new KeyManager(web3, undefined, mraebox);
+      if (contractOptions && contractOptions.saveSession === false) {
+        let signer = undefined;
+        if (options.keyManagerPublicKey) {
+          signer = new Signer(options.keyManagerPublicKey);
+        }
+        keymanager = new KeyManager(web3, undefined, options.mraebox, signer);
         provider = new OasisProvider(keymanager, web3._requestManager);
       }
 
-      if (options && options.key) {
-        keymanager.add(address, options.key);
+      if (contractOptions && contractOptions.key) {
+        keymanager.add(address, contractOptions.key);
       }
 
       if (address) {
@@ -106,8 +130,8 @@ class Oasis {
     });
   }
 
-  _setupWrappedAccounts(web3) {
-    let accounts = web3.eth.accounts;
+  _setupWrappedAccounts(options) {
+    let accounts = options.web3.eth.accounts;
     let wrappedSigner = accounts.signTransaction.bind(accounts);
     let keyManager = this.keyManager;
     accounts.signTransaction = (tx, from) => {
@@ -119,7 +143,7 @@ class Oasis {
           }
 
           const transformer = new ProviderConfidentialBackend.private.ConfidentialSendTransform(
-            web3._requestManager.provider,
+            options.web3._requestManager.provider,
             keyManager
           );
           transformer.encryptTx(tx, function finishSignConfidentialTransaction(err) {
@@ -135,7 +159,7 @@ class Oasis {
         });
       }
       // Deploy transaction, so just add the deploy header.
-      let backend = (new OasisProvider(keyManager, web3._requestManager)).selectBackend(tx.header);
+      let backend = (new OasisProvider(keyManager, options.web3._requestManager)).selectBackend(tx.header);
       backend.addOasisDeployHeader(tx);
       return wrappedSigner(tx, from);
     };
@@ -143,11 +167,11 @@ class Oasis {
     this.accounts = accounts;
   }
 
-  _setupSubscribe(web3) {
-    this.subscribe = (subscription, options, callback) => {
+  _setupSubscribe(options) {
+    this.subscribe = (subscription, subscribeOptions, callback) => {
       // Only try to decrypt logs.
       if (subscription !== 'logs') {
-        return web3.eth.subscribe(subscription, options, callback);
+        return options.web3.eth.subscribe(subscription, subscribeOptions, callback);
       }
 
       let wrappedEmitter = new EventEmitter();
@@ -182,9 +206,9 @@ class Oasis {
         };
       }
 
-      web3
+      options.web3
         .eth
-        .subscribe(subscription, options, wrappedCallback)
+        .subscribe(subscription, subscribeOptions, wrappedCallback)
         .on('data', decryptSubscriptionLog.bind(this, 'data'))
         .on('changed', decryptSubscriptionLog.bind(this, 'changed'))
         .on('error', (err) => {
@@ -221,12 +245,17 @@ class OasisUtils {
   }
 }
 
-function getPublicKeyOutputFormatter (t) {
+function getPublicKeyOutputFormatter (t, options) {
   // We called oasis_getPublicKey on a non-confidential contract.
   if (!t) {
     return t;
   }
-  let signer = new Signer(KeyManager.publicKey());
+  let signer = undefined;
+  if (options.keyManagerPublicKey) {
+    signer = new Signer(options.keyManagerPublicKey);
+  } else {
+    signer = new Signer(KeyManager.publicKey());
+  }
   let err = signer.verify(t.signature, t.public_key, t.timestamp);
   if (err) {
     throw err;

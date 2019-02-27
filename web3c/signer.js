@@ -35,7 +35,7 @@ class Signer {
     const digest = bytes.parseHex(hash(predigest));
     let publicKey = bytes.parseHex(this.publicKey);
     if (!nacl.sign.detached.verify(digest, signature, publicKey)) {
-      return new Error(`invalid signature for key/timestamp/signature: ${longTermKey}/${timestamp}/${signature}`);
+      return new Error(`invalid signature for key/timestamp/signature: ${longTermKey}/${timestamp}/${signature} with key manager: ${this.publicKey}`);
     }
     return null;
   }
