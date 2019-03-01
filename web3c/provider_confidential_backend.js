@@ -199,9 +199,16 @@ class ConfidentialSendTransform {
       }
       payload.method = 'oasis_call_enc';
       this.provider[this.provider.sendAsync ? 'sendAsync' : 'send'](payload, (err, resp) => {
-        if (!resp.result || err) {
+        if (err) {
           callback(err, resp);
+          return;
         }
+
+        if (!resp.result) {
+          callback(new Error('response missing result'), resp);
+          return;
+        }
+
         this.keymanager.decrypt(resp.result).then((plaintext) => {
           resp.result = plaintext;
           callback(err, resp);
@@ -222,10 +229,14 @@ class ConfidentialSendTransform {
     return this.keymanager.get(tx.to, (err, key) => {
       if (err) {
         callback(err);
+        return;
       }
+
       if (typeof key !== 'string') { // error
-        return callback(key);
+        callback(key);
+        return;
       }
+
       this.keymanager.encrypt(tx.data, key).then((cyphertext) => {
         tx.data = cyphertext;
         callback();
