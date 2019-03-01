@@ -134,12 +134,12 @@ class Oasis {
     let accounts = options.web3.eth.accounts;
     let wrappedSigner = accounts.signTransaction.bind(accounts);
     let keyManager = this.keyManager;
-    accounts.signTransaction = (tx, from) => {
+    accounts.signTransaction = (tx, from, callback) => {
       // Transaction to existing address, so we check it's confidential by asking the key manager.
       if (tx.to) {
         return new Promise(async (resolve, reject) => {
           if (!await this.isConfidential(tx.to)) {
-            return wrappedSigner(tx, from);
+            return wrappedSigner(tx, from, callback);
           }
 
           const transformer = new ProviderConfidentialBackend.private.ConfidentialSendTransform(
@@ -151,7 +151,7 @@ class Oasis {
               reject(err);
             }
             try {
-              return wrappedSigner(tx, from).then(resolve, reject);
+              return wrappedSigner(tx, from, callback).then(resolve, reject);
             } catch (e) {
               reject(e);
             }
@@ -161,7 +161,7 @@ class Oasis {
       // Deploy transaction, so just add the deploy header.
       let backend = (new OasisProvider(keyManager, options.web3._requestManager)).selectBackend(tx.header);
       backend.addOasisDeployHeader(tx);
-      return wrappedSigner(tx, from);
+      return wrappedSigner(tx, from, callback);
     };
 
     this.accounts = accounts;
