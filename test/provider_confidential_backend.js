@@ -20,7 +20,7 @@ let mockManager = {
 };
 
 class ResponseCollector {
-  constructor(done) {
+  constructor() {
     this.responses = [];
     this.timeout = null;
   }
