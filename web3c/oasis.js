@@ -139,7 +139,7 @@ class Oasis {
       if (tx.to) {
         return new Promise(async (resolve, reject) => {
           if (!await this.isConfidential(tx.to)) {
-            return wrappedSigner(tx, from, callback);
+            return wrappedSigner(tx, from, callback).then(resolve, reject);
           }
 
           const transformer = new ProviderConfidentialBackend.private.ConfidentialSendTransform(
