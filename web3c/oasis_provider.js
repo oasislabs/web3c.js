@@ -7,11 +7,11 @@ class OasisProvider {
   constructor(keyManager, internalManager) {
     this.keyManager = keyManager,
     this.internalManager = internalManager;
-    this.backend = new ProviderConfidentialBackend(keyManager, internalManager);
+    this.backend = new Promise((resolve) => this.backendPromise = resolve);
   }
 
   send(payload, callback) {
-    this.backend.send(payload, callback);
+    this.backend.then((provider) => provider.send(payload, callback));
   }
 
   /**
@@ -21,15 +21,19 @@ class OasisProvider {
    * @returns the new backend that is being used.
    */
   selectBackend(header) {
+    if (!this.backendPromise) {
+      throw new Error("Cannot change confidentiality of an existing contract.")
+    }
     // Confidential is not present in the header so default to confidential.
     if (!header || !Object.keys(header).includes('confidential')) {
-      this.backend = new ProviderConfidentialBackend(this.keyManager, this.internalManager);
+      this.backendPromise(new ProviderConfidentialBackend(this.keyManager, this.internalManager));
     } else if (header.confidential) {
-      this.backend = new ProviderConfidentialBackend(this.keyManager, this.internalManager);
+      this.backendPromise(new ProviderConfidentialBackend(this.keyManager, this.internalManager));
     } else {
-      this.backend = new ProviderPlaintextBackend(this.internalManager);
+      this.backendPromise(new ProviderPlaintextBackend(this.internalManager));
     }
-	return this.backend;
+    this.backendPromise = false;
+	  return this.backend;
   }
 }
 

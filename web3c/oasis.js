@@ -160,7 +160,7 @@ class Oasis {
       }
       // Deploy transaction, so just add the deploy header.
       let backend = (new OasisProvider(keyManager, options.web3._requestManager)).selectBackend(tx.header);
-      backend.addOasisDeployHeader(tx);
+      backend.then((b) => b.addOasisDeployHeader(tx));
       return wrappedSigner(tx, from, callback);
     };
 
