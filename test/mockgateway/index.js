@@ -165,7 +165,7 @@ async function handleRequest (req) {
       obj.result = responses.OASIS_DEPLOY_HEADER_EXPIRY;
     }
   } else {
-    console.log(req);
+    throw new Error(req);
   }
   return obj;
 }
@@ -173,7 +173,7 @@ async function handleRequest (req) {
 function validateHeader(txData) {
   let header = DeployHeaderHexReader.header(txData);
   if (header === null || header.version !== 1 || header.body.expiry !== responses.OASIS_DEPLOY_HEADER_EXPIRY || header.body.confidential !== true) {
-    throw Error("Invalid deployment header");
+    throw new Error('Invalid deployment header');
   }
 }
 

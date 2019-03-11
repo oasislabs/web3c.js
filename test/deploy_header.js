@@ -18,7 +18,7 @@ describe('DeployHeader', function() {
       },
       {
         description: 'errors when writing to bytecode that already has an invalid header',
-        bytecode: makeExpectedBytecode({"expiry":100000,"confidential":false,"badkey":true}, '1234'),
+        bytecode: makeExpectedBytecode({'expiry':100000,'confidential':false,'badkey':true}, '1234'),
         header: { expiry: 100000, confidential: false}
       }
     ];
@@ -40,25 +40,25 @@ describe('DeployHeader', function() {
         description: 'writes a deploy header to non-empty bytecode',
         bytecode: '0x1234',
         header: { expiry: 100000, confidential: false},
-        expected: makeExpectedBytecode({"expiry":100000,"confidential":false}, '1234')
+        expected: makeExpectedBytecode({'expiry':100000,'confidential':false}, '1234')
       },
       {
         description: 'overwrites a deploy header to non-empty bytecode with an existing confidential header',
-        bytecode: makeExpectedBytecode({"confidential":false}, '1234'),
+        bytecode: makeExpectedBytecode({'confidential':false}, '1234'),
         header: { confidential: true},
-        expected: makeExpectedBytecode({"confidential":true}, '1234')
+        expected: makeExpectedBytecode({'confidential':true}, '1234')
       },
       {
         description: 'overwrites a deploy header to non-empty bytecode with an existing expiry header',
-        bytecode: makeExpectedBytecode({"expiry":100000}, '1234'),
+        bytecode: makeExpectedBytecode({'expiry':100000}, '1234'),
         header: { expiry: 100001},
-        expected: makeExpectedBytecode({"expiry":100001}, '1234')
+        expected: makeExpectedBytecode({'expiry':100001}, '1234')
       },
       {
         description: 'overwrites a deploy header to non-empty bytecode with an existing expiry and confidential header',
-        bytecode: makeExpectedBytecode({"expiry":100000,"confidential":false}, '1234'),
+        bytecode: makeExpectedBytecode({'expiry':100000,'confidential':false}, '1234'),
         header: { expiry: 100001, confidential: true},
-        expected: makeExpectedBytecode({"expiry":100001,"confidential":true}, '1234')
+        expected: makeExpectedBytecode({'expiry':100001,'confidential':true}, '1234')
       }
     ];
 

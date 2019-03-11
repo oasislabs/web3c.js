@@ -1,17 +1,16 @@
 const DeployHeader = require('./deploy_header');
 const ProviderConfidentialBackend = require('./provider_confidential_backend');
-const makeContractFactory = require('./contract_factory');
 
 class OasisProvider {
 
   constructor(keyManager, internalManager) {
     this.keyManager = keyManager,
     this.internalManager = internalManager;
-    this.backend = new ProviderConfidentialBackend(keyManager, internalManager);
+    this.backend = new Promise((resolve) => this.backendPromise = resolve);
   }
 
   send(payload, callback) {
-    this.backend.send(payload, callback);
+    this.backend.then((provider) => provider.send(payload, callback));
   }
 
   /**
@@ -20,16 +19,23 @@ class OasisProvider {
    * @param {Object} header is the json body of the Oasis contract deploy header.
    * @returns the new backend that is being used.
    */
-  selectBackend(header) {
+  getBackend(header) {
     // Confidential is not present in the header so default to confidential.
     if (!header || !Object.keys(header).includes('confidential')) {
-      this.backend = new ProviderConfidentialBackend(this.keyManager, this.internalManager);
+      return new ProviderConfidentialBackend(this.keyManager, this.internalManager);
     } else if (header.confidential) {
-      this.backend = new ProviderConfidentialBackend(this.keyManager, this.internalManager);
-    } else {
-      this.backend = new ProviderPlaintextBackend(this.internalManager);
+      return new ProviderConfidentialBackend(this.keyManager, this.internalManager);
     }
-	return this.backend;
+    return new ProviderPlaintextBackend(this.internalManager);
+  }
+
+  selectBackend(header) {
+    if (!this.backendPromise) {
+      throw new Error('Cannot change confidentiality of an existing contract.');
+    }
+    this.backendPromise(this.getBackend(header));
+    this.backendPromise = false;
+    return this.backend;
   }
 }
 
@@ -71,7 +77,7 @@ class ProviderPlaintextBackend {
     if (!tx.to) {
       if (tx.header) {
         if (tx.header.confidential) {
-          throw new Error(`Cannot specify a confidential header with the plaaintext backend ${tx.header}`);
+          throw new Error(`Cannot specify a confidential header with the plaintext backend ${tx.header}`);
         }
         tx.data = DeployHeader.deployCode(tx.header, tx.data);
       }

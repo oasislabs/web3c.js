@@ -1,7 +1,5 @@
 /* globals describe,it,before,after */
-const assert = require('assert');
 const web3 = require('web3');
-const web3c = require('../');
 const gateway = require('./mockgateway');
 const artifact = require('../demo/example.json');
 const web3cmocksigner = require('./web3c').web3cMockSigner;
@@ -9,13 +7,6 @@ const web3cmocksigner = require('./web3c').web3cMockSigner;
 describe('Web3', () => {
 
   let gw;
-  let timeout;
-
-  if (process && process.env && process.env.TIMEOUT) {
-    timeout = process.env.TIMEOUT;
-  } else {
-    timeout = 5000;
-  }
 
   let provider = gateway.start();
 

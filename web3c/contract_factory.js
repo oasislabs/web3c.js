@@ -34,7 +34,7 @@ function makeContractFactory(web3, providerFn) {
     this.defaultAccount = c.constructor.defaultAccount;
     this.defaultBlock = c.constructor.defaultBlock || 'latest';
 
-	if (!provider) {
+    if (!provider) {
       provider = providerFn(address, options);
     }
 
@@ -51,7 +51,7 @@ function makeContractFactory(web3, providerFn) {
       deployOptions = deployOptions || {};
 
       // Configure the provider to be confidential (or not) based upon the contract's deploy header.
-      provider.selectBackend(deployOptions.header);
+      provider.backend = Promise.resolve(provider.getBackend(deployOptions.header));
 
       // Create the txObject that we want to patch and return.
       let txObject = c.deploy.call(this, deployOptions, callback);

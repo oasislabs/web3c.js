@@ -5,7 +5,7 @@ const MraeBox = require('../crypto/node/mrae_box');
 
 describe('Key Manager', function() {
   let mockSigner = {
-	verify: (_sign, _key, _timestamp) => { /* no-op */ }
+    verify: () => { /* no-op */ }
   };
 
   it('can encrypt and decrypt', async function() {

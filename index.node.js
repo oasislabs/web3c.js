@@ -28,10 +28,10 @@ function buildOptions(web3, options) {
   options.web3 = web3;
 
   if (!options.storage) {
-	options.storage = new localStorage.LocalStorage('.web3c');
+    options.storage = new localStorage.LocalStorage('.web3c');
   }
   if (!options.mraebox) {
-	options.mraebox = require('./crypto/node/mrae_box');
+    options.mraebox = require('./crypto/node/mrae_box');
   }
 
   return options;
