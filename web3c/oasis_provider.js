@@ -19,18 +19,21 @@ class OasisProvider {
    * @param {Object} header is the json body of the Oasis contract deploy header.
    * @returns the new backend that is being used.
    */
+  getBackend(header) {
+    // Confidential is not present in the header so default to confidential.
+    if (!header || !Object.keys(header).includes('confidential')) {
+      return new ProviderConfidentialBackend(this.keyManager, this.internalManager);
+    } else if (header.confidential) {
+      return new ProviderConfidentialBackend(this.keyManager, this.internalManager);
+    }
+    return new ProviderPlaintextBackend(this.internalManager);
+  }
+
   selectBackend(header) {
     if (!this.backendPromise) {
       throw new Error('Cannot change confidentiality of an existing contract.');
     }
-    // Confidential is not present in the header so default to confidential.
-    if (!header || !Object.keys(header).includes('confidential')) {
-      this.backendPromise(new ProviderConfidentialBackend(this.keyManager, this.internalManager));
-    } else if (header.confidential) {
-      this.backendPromise(new ProviderConfidentialBackend(this.keyManager, this.internalManager));
-    } else {
-      this.backendPromise(new ProviderPlaintextBackend(this.internalManager));
-    }
+    this.backendPromise(this.getBackend(header));
     this.backendPromise = false;
     return this.backend;
   }
@@ -74,7 +77,7 @@ class ProviderPlaintextBackend {
     if (!tx.to) {
       if (tx.header) {
         if (tx.header.confidential) {
-          throw new Error(`Cannot specify a confidential header with the plaaintext backend ${tx.header}`);
+          throw new Error(`Cannot specify a confidential header with the plaintext backend ${tx.header}`);
         }
         tx.data = DeployHeader.deployCode(tx.header, tx.data);
       }
