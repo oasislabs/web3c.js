@@ -252,7 +252,7 @@ describe('Web3', () => {
  */
 function web3cMockSigner(gw) {
   let mockSigner = {
-    verify: (_sign, _key, _timestamp) => {  }
+    verify: () => {  }
   };
   let _web3c = new web3c(gw);
 

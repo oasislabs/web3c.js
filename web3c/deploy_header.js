@@ -22,7 +22,7 @@ class DeployHeader {
     let length = DeployHeaderHexWriter.size(body);
 
     if (length.substr(2).length > 4) {
-      throw Error("Length of the contract deploy header must be no greater than two bytes");
+      throw new Error('Length of the contract deploy header must be no greater than two bytes');
     }
 
     return '0x' + DeployHeader.prefix() + version.substr(2) + length.substr(2) + body.substr(2);
@@ -86,7 +86,7 @@ class DeployHeader {
       if (!validKeys.includes(keys[k])) {
         return false;
       }
-    };
+    }
     return true;
   }
 

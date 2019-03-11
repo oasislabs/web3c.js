@@ -1,6 +1,5 @@
 const DeployHeader = require('./deploy_header');
 const ProviderConfidentialBackend = require('./provider_confidential_backend');
-const makeContractFactory = require('./contract_factory');
 
 class OasisProvider {
 
@@ -22,7 +21,7 @@ class OasisProvider {
    */
   selectBackend(header) {
     if (!this.backendPromise) {
-      throw new Error("Cannot change confidentiality of an existing contract.")
+      throw new Error('Cannot change confidentiality of an existing contract.');
     }
     // Confidential is not present in the header so default to confidential.
     if (!header || !Object.keys(header).includes('confidential')) {
@@ -33,7 +32,7 @@ class OasisProvider {
       this.backendPromise(new ProviderPlaintextBackend(this.internalManager));
     }
     this.backendPromise = false;
-	  return this.backend;
+    return this.backend;
   }
 }
 

@@ -1,15 +1,11 @@
-/* globals describe,it,before,after */
+/* globals describe,it,beforeEach */
 const assert = require('assert');
 const ConfidentialProvider = require('../web3c/provider_confidential_backend');
 
-let mockSigner = {
-	verify: (_sign, _key, _timestamp) => { /* no-op */ }
-};
-
 let mockKeyManager = {
-  get: (to, callback) => { callback(null, 'key'); },
-  encrypt: (value) => { return new Promise((resolve, reject) => resolve(value)); },
-  decrypt: (value) => { return new Promise((resolve, reject) => resolve(value)); }
+  get: (_to, callback) => { callback(null, 'key'); },
+  encrypt: (value) => { return new Promise((resolve) => resolve(value)); },
+  decrypt: (value) => { return new Promise((resolve) => resolve(value)); }
 };
 
 let mockManager = {
@@ -71,8 +67,6 @@ class NetworkProvider {
 }
 
 describe('ConfidentialProvider', () => {
-
-  let keymanager;
   let provider;
 
   beforeEach(() => {

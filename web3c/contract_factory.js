@@ -34,7 +34,7 @@ function makeContractFactory(web3, providerFn) {
     this.defaultAccount = c.constructor.defaultAccount;
     this.defaultBlock = c.constructor.defaultBlock || 'latest';
 
-	if (!provider) {
+    if (!provider) {
       provider = providerFn(address, options);
     }
 

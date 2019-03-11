@@ -255,7 +255,7 @@ class KeyManager {
    * Public key associated with the *remote* dummy key manager.
    */
   static publicKey() {
-    return "0x51d5e24342ae2c4a951e24a2ba45a68106bcb7986198817331889264fd10f1bf";
+    return '0x51d5e24342ae2c4a951e24a2ba45a68106bcb7986198817331889264fd10f1bf';
   }
 }
 
