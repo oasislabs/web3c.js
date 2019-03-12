@@ -169,10 +169,23 @@ class Oasis {
   }
 
   _setupSubscribe(options) {
-    this.subscribe = (subscription, subscribeOptions, callback) => {
+    this.subscribe = function() {
+      // expected arguments -> (type, filter, callback)
+
+      // web3.eth.subscribe is strict when it comes to how many arguments are
+      // provided for a call to subscribe. We need to make sure that in the
+      // call we provide exactly the same arguments to web3.eth.subscribe
+      // as they are provided to this.subscribe
+      const args = Array.prototype.slice.call(arguments);
+      if (args.length === 0) {
+        throw new Error('subscription type must be provided');
+      }
+
+      const type = args[0];
+
       // Only try to decrypt logs.
-      if (subscription !== 'logs') {
-        return options.web3.eth.subscribe(subscription, subscribeOptions, callback);
+      if (type !== 'logs') {
+        return options.web3.eth.subscribe.apply(options.web3.eth, args);
       }
 
       let wrappedEmitter = new EventEmitter();
@@ -192,7 +205,8 @@ class Oasis {
       };
 
       let wrappedCallback = undefined;
-      if (callback) {
+      if (args.length > 2 && typeof args[2] === 'function') {
+        const callback = args[2];
         wrappedCallback = async (err, log) => {
           if (err) {
             return callback(err);
@@ -205,11 +219,13 @@ class Oasis {
             return callback(null, log);
           }
         };
+
+        args[2] = wrappedCallback;
       }
 
       options.web3
         .eth
-        .subscribe(subscription, subscribeOptions, wrappedCallback)
+        .subscribe.apply(options.web3.eth, args)
         .on('data', decryptSubscriptionLog.bind(this, 'data'))
         .on('changed', decryptSubscriptionLog.bind(this, 'changed'))
         .on('error', (err) => {
