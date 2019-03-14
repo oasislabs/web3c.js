@@ -27,7 +27,12 @@ function makeContractFactory(web3, providerFn) {
   return function OasisContract(abi, address, options, provider) {
     let c = new EthContract(abi, address, options);
 
-    Object.assign(this, c);
+    Object.keys(c).forEach((key) => {
+      Object.defineProperty(this, key, {
+        value: c[key],
+        enumerable: true
+      });
+    });
     this.__proto__ = c.__proto__;
 
     // Object.DefineProperty's are not copied otherwise.
