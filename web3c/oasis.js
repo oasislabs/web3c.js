@@ -6,6 +6,8 @@ const OasisProvider = require('./oasis_provider');
 const ProviderConfidentialBackend = require('./provider_confidential_backend');
 const ConfidentialSendTransform = ProviderConfidentialBackend.private.ConfidentialSendTransform;
 const makeContractFactory = require('./contract_factory');
+const Subscriptions = require('web3-core-subscriptions').subscriptions;
+const bytes = require('./bytes');
 
 /**
  * Oasis
@@ -169,6 +171,71 @@ class Oasis {
   }
 
   _setupSubscribe(options) {
+    const oasisExclusiveSubscriptions = {};
+    const completedTransaction = new Subscriptions({
+      name: 'subscribe',
+      type: 'eth',
+      subscriptions: {
+        completedTransaction: {
+          subscriptionName: 'completedTransaction', // replace subscription with this name
+          params: 1,
+        }
+      }
+    });
+
+    completedTransaction.setRequestManager(options.web3._requestManager);
+    completedTransaction.attachToObject(oasisExclusiveSubscriptions);
+
+    this._subscribeCompletedTransaction = function(filter) {
+      const address = filter && filter.address ? filter.address : null;
+      if (address) {
+        delete filter.address;
+      }
+
+      const emitter = new EventEmitter();
+      // undefined means that we need to initialize it later in a lazy way,
+      // false means that the subscription is assumed to be for a non
+      // confidential transaction
+      let isConfidential = address ? undefined : false;
+
+      const handleData = async data => {
+        // initialize lazily isConfidential. We need to return the EventEmitter
+        // from _subscribeCompletedTransaction because this is the contract of a
+        // subscribe call, we cannot return a promise. So, we initialize lazily
+        // the `isConfidential` in the first call
+        if (isConfidential === undefined) {
+          try {
+            isConfidential = await this.isConfidential(address);
+
+          } catch (e) {
+            emitter.emit('error', e);
+          }
+        }
+
+        if (isConfidential) {
+          try {
+            const returnData = await this.keyManager.decrypt(bytes.toHex(data.returnData));
+            data.returnData = returnData;
+            emitter.emit('data', data);
+          } catch (e) {
+            emitter.emit('error', e);
+          }
+
+        } else {
+          emitter.emit('data', data);
+        }
+      };
+
+      oasisExclusiveSubscriptions.subscribe('completedTransaction', filter)
+        .on('data', handleData)
+        .on('error', (err) => {
+          emitter.emit('error', err);
+        });
+
+      return emitter;
+
+    };
+
     this.subscribe = function() {
       // expected arguments -> (type, filter, callback)
 
@@ -183,8 +250,10 @@ class Oasis {
 
       const type = args[0];
 
-      // Only try to decrypt logs.
-      if (type !== 'logs') {
+      if (type === 'completedTransaction') {
+        return this._subscribeCompletedTransaction(args[1]);
+
+      } else if (type !== 'logs') {
         return options.web3.eth.subscribe.apply(options.web3.eth, args);
       }
 
