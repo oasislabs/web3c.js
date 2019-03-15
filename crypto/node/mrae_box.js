@@ -22,7 +22,9 @@ module.exports = {
     Plaintext = Buffer.from(Plaintext);
     AdditionalData = Buffer.from(AdditionalData);
 
-    return sivCtr.Encrypt(AesKey, Nonce, Plaintext, AdditionalData);
+    let cipher = await sivCtr.Encrypt(AesKey, Nonce, Plaintext, AdditionalData);
+
+    return new Uint8Array(cipher);
   },
 
   Open: async function(Nonce, Ciphertext, AdditionalData, PeerPublicKey, PrivateKey) {
@@ -38,6 +40,8 @@ module.exports = {
     Ciphertext = Buffer.from(Ciphertext);
     AdditionalData = Buffer.from(AdditionalData);
 
-    return sivCtr.Decrypt(AesKey, Nonce, Ciphertext, AdditionalData);
+    let plaintext = await sivCtr.Decrypt(AesKey, Nonce, Ciphertext, AdditionalData);
+
+    return new Uint8Array(plaintext);
   }
 };
