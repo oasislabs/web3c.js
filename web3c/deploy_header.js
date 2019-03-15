@@ -1,5 +1,6 @@
-const bytes = require('./bytes');
 const assert = require('assert');
+const bytes = require('./bytes');
+const utils = require('./utils');
 
 class DeployHeader {
 
@@ -57,7 +58,7 @@ class DeployHeader {
       initcode = DeployHeaderHexReader.initcode(deploycode);
     }
     if (headerBody) {
-      Object.assign(currentHeader.body, headerBody);
+      utils.objectAssign(currentHeader.body, headerBody);
     }
 
     return currentHeader.data() + initcode.substr(2);

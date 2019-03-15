@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const sivCtr = require('./siv_ctr');
 
 const boxKDFTweak_str = 'MRAE_Box_SIV_CTR-AES128_HMAC-SHA256-128';
-var boxKDFTweak = new Uint8Array(boxKDFTweak_str.length);
+var boxKDFTweak = Buffer.alloc(boxKDFTweak_str.length);
 for (var i = 0; i < boxKDFTweak_str.length; i++) {
   boxKDFTweak[i] = boxKDFTweak_str.charCodeAt(i);
 }
@@ -17,7 +17,14 @@ module.exports = {
     let AesKey = hmac.digest();
     PreMasterKey = undefined;
 
-    return sivCtr.Encrypt(AesKey, Nonce, Plaintext, AdditionalData);
+    AesKey = Buffer.from(AesKey);
+    Nonce = Buffer.from(Nonce);
+    Plaintext = Buffer.from(Plaintext);
+    AdditionalData = Buffer.from(AdditionalData);
+
+    let cipher = await sivCtr.Encrypt(AesKey, Nonce, Plaintext, AdditionalData);
+
+    return new Uint8Array(cipher);
   },
 
   Open: async function(Nonce, Ciphertext, AdditionalData, PeerPublicKey, PrivateKey) {
@@ -28,6 +35,13 @@ module.exports = {
     let AesKey = hmac.digest();
     PreMasterKey = undefined;
 
-    return sivCtr.Decrypt(AesKey, Nonce, Ciphertext, AdditionalData);
+    AesKey = Buffer.from(AesKey);
+    Nonce = Buffer.from(Nonce);
+    Ciphertext = Buffer.from(Ciphertext);
+    AdditionalData = Buffer.from(AdditionalData);
+
+    let plaintext = await sivCtr.Decrypt(AesKey, Nonce, Ciphertext, AdditionalData);
+
+    return new Uint8Array(plaintext);
   }
 };
