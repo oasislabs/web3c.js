@@ -1,6 +1,6 @@
 // Web3c
 const web3 = require('web3');
-const localStorage = require('node-localstorage');
+//const localStorage = require('node-localstorage');
 const Oasis = require('./web3c/oasis');
 /**
  * Web3c is a wrapper that can be invoked in the same way as Web3.
