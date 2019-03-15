@@ -208,7 +208,10 @@ class Oasis {
             isConfidential = await this.isConfidential(address);
 
           } catch (e) {
-            emitter.emit('error', e);
+            isConfidential = false;
+            let err = new Error('failed to verify if transaction comes from a' +
+                                ' confidential contract call: ' + e.message);
+            emitter.emit('error', err);
           }
         }
 
@@ -218,7 +221,8 @@ class Oasis {
             data.returnData = returnData;
             emitter.emit('data', data);
           } catch (e) {
-            emitter.emit('error', e);
+            let err = new Error('failed to decrypt returnData field: ' + e.message);
+            emitter.emit('error', err);
           }
 
         } else {
@@ -228,9 +232,7 @@ class Oasis {
 
       oasisExclusiveSubscriptions.subscribe('completedTransaction', filter)
         .on('data', handleData)
-        .on('error', (err) => {
-          emitter.emit('error', err);
-        });
+        .on('error', (err) => emitter.emit('error', err));
 
       return emitter;
 
