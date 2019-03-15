@@ -27,9 +27,8 @@ var Encrypt = async function (Key, Nonce, Plaintext, AdditionalData) {
   // X = Plaintext
   hmac.update(SivData);
   let Siv = Buffer.from(hmac.digest().slice(0, TagSize));
-  let other = Key.slice(32, 48);
 
-  let cipher = crypto.createCipheriv('AES-128-CTR', other, Siv);
+  let cipher = crypto.createCipheriv('AES-128-CTR', Key.slice(32, 48), Siv);
 
   // Node Async for crypto.cipher is evented, requiring an explicit promise.
   return new Promise(function(resolve, reject) {
