@@ -12,18 +12,21 @@ module.exports = {
   Seal: async function(Nonce, Plaintext, AdditionalData, PeerPublicKey, PrivateKey) {
     var PreMasterKey = nacl.scalarMult(PrivateKey, PeerPublicKey);
 
-    let hmac = crypto.createHmac('sha384', boxKDFTweak);
+    let hmac = crypto.createHmac('sha384', new Buffer(boxKDFTweak));
+
     hmac.update(PreMasterKey);
     let AesKey = hmac.digest();
+
     PreMasterKey = undefined;
 
     return sivCtr.Encrypt(AesKey, Nonce, Plaintext, AdditionalData);
   },
 
   Open: async function(Nonce, Ciphertext, AdditionalData, PeerPublicKey, PrivateKey) {
+    //opening yea
     var PreMasterKey = nacl.scalarMult(PrivateKey, PeerPublicKey);
 
-    let hmac = crypto.createHmac('sha384', boxKDFTweak);
+    let hmac = crypto.createHmac('sha384', new Buffer(boxKDFTweak));
     hmac.update(PreMasterKey);
     let AesKey = hmac.digest();
     PreMasterKey = undefined;
