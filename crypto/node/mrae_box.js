@@ -10,14 +10,11 @@ for (var i = 0; i < boxKDFTweak_str.length; i++) {
 
 module.exports = {
   Seal: async function(Nonce, Plaintext, AdditionalData, PeerPublicKey, PrivateKey) {
-
     var PreMasterKey = nacl.scalarMult(PrivateKey, PeerPublicKey);
 
     let hmac = crypto.createHmac('sha384', boxKDFTweak);
-
     hmac.update(PreMasterKey);
     let AesKey = hmac.digest();
-
     PreMasterKey = undefined;
 
     AesKey = Buffer.from(AesKey);
@@ -29,7 +26,6 @@ module.exports = {
   },
 
   Open: async function(Nonce, Ciphertext, AdditionalData, PeerPublicKey, PrivateKey) {
-
     var PreMasterKey = nacl.scalarMult(PrivateKey, PeerPublicKey);
 
     let hmac = crypto.createHmac('sha384', boxKDFTweak);
