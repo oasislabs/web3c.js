@@ -26,6 +26,14 @@ const onReq = function (req, res) {
   });
 };
 
+function hexstamp () {
+  let hex = web3.utils.toHex(Math.floor(Date.now() / 1000));
+  if (hex.length % 2 === 1) {
+    hex = '0x0' + hex.substr(2);
+  }
+  return hex;
+}
+
 async function handleRequest (req) {
   let obj = {
     'jsonrpc': '2.0',
@@ -46,8 +54,8 @@ async function handleRequest (req) {
     }
     obj.result = {
       'public_key': '0x59e35409ffdb0be6a74acc88d5e99e2b50782662fa5bf834b8b9d53bc59c7c4a',
-      'timestamp': web3.utils.toHex((new Date()).valueOf()),
-      'signature': '0x0',
+      'timestamp': hexstamp(),
+      'signature': '0x',
     };
   } else if (req.method == 'oasis_call_enc') {
     let encdata = req.params[0].data;
@@ -183,3 +191,11 @@ module.exports = {
   },
   responses
 };
+
+if (require.main === module) {
+  const server = http.createServer(onReq);
+  server.listen(() => {
+    const addr = server.address();
+    console.log(`http://localhost:${addr.port}`); // eslint-disable-line no-console
+  });
+}
