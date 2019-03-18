@@ -1,6 +1,7 @@
 /* globals describe,it,before,after */
 const assert = require('assert');
 const web3 = require('web3');
+const EventEmitter = require('events');
 const web3c = require('../');
 const gateway = require('./mockgateway');
 const artifact = require('../demo/example.json');
@@ -244,6 +245,91 @@ describe('Web3', () => {
     assert.equal(receipt.transactionHash, gateway.responses.OASIS_PLAINTEXT_TX_HASH);
 
   }).timeout(timeout);
+
+  it('should subscribe to completedTransaction from anonymous contract', (done) => {
+    let _web3c = new web3c(gw);
+    let emitter = new EventEmitter();
+
+    _web3c.oasis._oasisExclusiveSubscriptions.subscribe = function(type, filter) {
+      assert.equal(type, 'completedTransaction');
+      assert.equal(filter.transactionHash, 'hash');
+      return emitter;
+    };
+
+    let result = _web3c.oasis.subscribe('completedTransaction', {
+      transactionHash: 'hash'
+    });
+
+    result.on('data', data => {
+      assert.equal(data.transactionHash, 'hash');
+      assert.equal(data.returnData, '0x00010203');
+      done();
+    }).on('error', done);
+
+    emitter.emit('data', {
+      transactionHash: 'hash',
+      returnData: [0, 1, 2, 3]
+    });
+  });
+
+  it('should subscribe to completedTransaction from non-confidential contract', (done) => {
+    let _web3c = new web3c(gw);
+    let emitter = new EventEmitter();
+
+    _web3c.oasis._oasisExclusiveSubscriptions.subscribe = function(type, filter) {
+      assert.equal(type, 'completedTransaction');
+      assert.equal(filter.transactionHash, 'hash');
+      return emitter;
+    };
+
+    _web3c.oasis.isConfidential = () => new Promise(resolve => resolve(false));
+    let result = _web3c.oasis.subscribe('completedTransaction', {
+      transactionHash: 'hash',
+      address,
+    });
+
+    result.on('data', data => {
+      assert.equal(data.transactionHash, 'hash');
+      assert.equal(data.returnData, '0x00010203');
+      done();
+    }).on('error', done);
+
+    emitter.emit('data', {
+      transactionHash: 'hash',
+      returnData: [0, 1, 2, 3]
+    });
+  });
+
+  it('should subscribe to completedTransaction from confidential contract', (done) => {
+    let _web3c = new web3c(gw);
+    let emitter = new EventEmitter();
+
+    _web3c.oasis.keyManager.encrypt = (text) => new Promise((resolve) => resolve(text));
+    _web3c.oasis.keyManager.decrypt = (text) => new Promise((resolve) => resolve(text));
+
+    _web3c.oasis._oasisExclusiveSubscriptions.subscribe = function(type, filter) {
+      assert.equal(type, 'completedTransaction');
+      assert.equal(filter.transactionHash, 'hash');
+      return emitter;
+    };
+
+    _web3c.oasis.isConfidential = () => new Promise(resolve => resolve(true));
+    let result = _web3c.oasis.subscribe('completedTransaction', {
+      transactionHash: 'hash',
+      address,
+    });
+
+    emitter.emit('data', {
+      transactionHash: 'hash',
+      returnData: [0, 1, 2, 3]
+    });
+
+    result.on('data', data => {
+      assert.equal(data.transactionHash, 'hash');
+      assert.equal(data.returnData, '0x00010203');
+      done();
+    }).on('error', done);
+  });
 
 });
 

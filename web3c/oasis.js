@@ -171,7 +171,7 @@ class Oasis {
   }
 
   _setupSubscribe(options) {
-    const oasisExclusiveSubscriptions = {};
+    this._oasisExclusiveSubscriptions = {};
     const completedTransaction = new Subscriptions({
       name: 'subscribe',
       type: 'eth',
@@ -184,7 +184,7 @@ class Oasis {
     });
 
     completedTransaction.setRequestManager(options.web3._requestManager);
-    completedTransaction.attachToObject(oasisExclusiveSubscriptions);
+    completedTransaction.attachToObject(this._oasisExclusiveSubscriptions);
 
     this._subscribeCompletedTransaction = function(filter) {
       const address = filter && filter.address ? filter.address : null;
@@ -218,6 +218,7 @@ class Oasis {
         if (isConfidential) {
           try {
             const returnData = await this.keyManager.decrypt(bytes.toHex(data.returnData));
+
             data.returnData = returnData;
             emitter.emit('data', data);
           } catch (e) {
@@ -226,11 +227,12 @@ class Oasis {
           }
 
         } else {
+          data.returnData = bytes.toHex(data.returnData);
           emitter.emit('data', data);
         }
       };
 
-      oasisExclusiveSubscriptions.subscribe('completedTransaction', filter)
+      this._oasisExclusiveSubscriptions.subscribe('completedTransaction', filter)
         .on('data', handleData)
         .on('error', (err) => emitter.emit('error', err));
 
