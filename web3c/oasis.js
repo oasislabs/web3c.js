@@ -177,7 +177,7 @@ class Oasis {
       type: 'eth',
       subscriptions: {
         completedTransaction: {
-          subscriptionName: 'completedTransaction', // replace subscription with this name
+          subscriptionName: 'completedTransaction',
           params: 1,
         }
       }
@@ -189,6 +189,9 @@ class Oasis {
     this._subscribeCompletedTransaction = function(filter) {
       const address = filter && filter.address ? filter.address : null;
       if (address) {
+        // remove address from filter which is not a property expected in the
+        // filter by the backend, this is a property used in web3c to
+        // identify whether the subscription is for a confidential transaction
         delete filter.address;
       }
 
