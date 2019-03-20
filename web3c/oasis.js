@@ -10,6 +10,118 @@ const Subscriptions = require('web3-core-subscriptions').subscriptions;
 const bytes = require('./bytes');
 
 /**
+ * InvokeSubscription is part of the private API. It's a convenience
+ * class to encapsulate the state for managing subscriptions for the
+ * purpose of the implementation of invoke
+ */
+class InvokeSubscription {
+  constructor(options) {
+    this.oasis = options.oasis;
+    this.subscriptions = {};
+  }
+
+  getSubscription(fromAddress) {
+    if (this.subscriptions[fromAddress]) {
+      return this.subscriptions[fromAddress];
+
+    } else {
+      return this.createNewSubscription(fromAddress);
+    }
+  }
+
+  createNewSubscription(fromAddress) {
+    const emitter = this.subscribe('completedTransaction', {
+      fromAddress: fromAddress
+    });
+
+    const subscription = {
+      fromAddress: fromAddress,
+      lastUsed: Date.now(),
+      emitter: emitter,
+      receivedTransactions: {},
+      expectedTransactions: {}
+    };
+
+    this.subscriptions[fromAddress] = subscription;
+    return this.subscriptions[fromAddress];
+  }
+
+  async forwardData(data, toAddress, promise) {
+    let isConfidential;
+    try {
+      isConfidential = await this.oasis.isConfidential(toAddress);
+    } catch (e) {
+      let err = new Error('failed to verify if transaction comes from a' +
+                          ' confidential contract call: ' + e.message);
+      promise.reject(err);
+      return;
+    }
+
+    if (isConfidential) {
+      try {
+        const returnData = await this.oasis.keyManager.decrypt(bytes.toHex(data.returnData));
+        promise.resolve(returnData);
+
+      } catch (e) {
+        let err = new Error('failed to decrypt returnData field: ' + e.message);
+        promise.reject(err);
+      }
+
+    } else {
+      promise.resolve(bytes.toHex(data.returnData));
+    }
+  }
+
+  createResolvablePromise() {
+    const resolver = {};
+    const promise = new Promise((resolve, reject) => {
+      resolver.resolve = resolve;
+      resolver.reject = reject;
+    });
+    promise.resolver = resolver;
+    return promise;
+  }
+
+  pushExpectedTransaction(expectedTransaction) {
+    const hash = expectedTransaction.transactionHash;
+    const toAddress = expectedTransaction.toAddress;
+    const promise = expectedTransaction.promise;
+
+    if (this.receivedTransactions[hash]) {
+      // in the case that we have already received the transaction
+      // we can resolve the promise here and now
+      const data = this.receivedTransactions[hash];
+      delete this.receivedTransactions[hash];
+      this.forwardData(data, toAddress, promise);
+      return promise;
+    }
+
+    if (this.expectedTransactions[hash]) {
+      throw new Error('already expecting transaction');
+    }
+
+    this.expectedTransactions[hash] = {
+      transactionHash: hash,
+      toAddress: toAddress,
+      emitter: promise
+    };
+
+    return promise;
+  }
+
+  handleData(data) {
+    if (this.expectedTransactions[data.transactionHash]) {
+      const expectedTransaction = this.expectedTransactions[data.transactionHash];
+      delete this.expectedTransactions[data.transactionHash];
+      this.forwardData(data, expectedTransaction.toAddress, expectedTransaction.promise);
+
+    } else {
+      this.receivedTransactions[data.transactionHash] = data;
+    }
+  }
+}
+
+/**
  * Oasis
  *
  * This module exports the `web3.oasis` namespace. It defines the parameters
@@ -31,6 +143,7 @@ class Oasis {
     this._setupContract(options);
     this._setupWrappedAccounts(options);
     this._setupSubscribe(options);
+    this._setupInvoke(options);
   }
 
   _setupKeyManager(options) {
@@ -171,6 +284,7 @@ class Oasis {
   }
 
   _setupSubscribe(options) {
+    this._subscriptions = {};
     this._oasisExclusiveSubscriptions = {};
     const completedTransaction = new Subscriptions({
       name: 'subscribe',
@@ -309,6 +423,49 @@ class Oasis {
         });
 
       return wrappedEmitter;
+    };
+  }
+
+  _setupInvoke(options) {
+    // for invoke to work, we need to keep track of which subscriptions are currently
+    // available to avoid recreating subscriptions.
+    this._invokeSubscription = new InvokeSubscription({oasis: this});
+
+    this._executeSend = async (subscription, send, contract, sendArgs) => {
+      const promise = this._invokeSubscription.createResolvabelPromise();
+
+      await send.apply(contract, sendArgs)
+        .on('transactionHash', hash => {
+          this._invokeSubscription.pushExpectedTransaction({
+            transactionHash: hash,
+            toAddress: contract.address,
+            promise: promise
+          });
+        });
+
+      return promise;
+    };
+
+    this.invoke = async function() {
+      // arguments expected are
+      // (fromAddress, contract object, send function, arguments for send function)
+
+      const args = Array.prototype.slice.call(arguments);
+      if (args.length < 3) {
+        throw new Error('invoke needs at least three arguments');
+      }
+
+      const fromAddress = args[0];
+      const contract = args[1];
+      const send = args[2];
+      const sendArgs = args.splice(3, args.length);
+
+      if (typeof send !== 'function') {
+        throw new Error('type of send must be a function');
+      }
+
+      const subscription = await this._invokeSubscription.getSubscription(fromAddress);
+      return this._executeSend(subscription, send, contract, sendArgs);
     };
   }
 
