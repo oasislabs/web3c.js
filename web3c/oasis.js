@@ -103,7 +103,6 @@ class InvokeSubscription {
       // we can resolve the promise here and now
       const data = subscription.receivedTransactions[hash];
       delete subscription.receivedTransactions[hash];
-
       this.forwardData(data, toAddress, promise);
       return promise;
     }
