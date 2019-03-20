@@ -14,8 +14,11 @@ const utils = require('./utils');
  *          Contract constructor, for example { saveSession: false } for confidential
  *          contracts.
  */
-function makeContractFactory(web3, providerFn) {
-  let EthContract = web3.eth.Contract;
+function makeContractFactory(options, providerFn) {
+  const web3 = options.web3;
+  const invokeProvider = options.invokeProvider;
+  const EthContract = web3.eth.Contract;
+
   /**
    * @param {Object} abi
    * @param {String} address
@@ -27,7 +30,8 @@ function makeContractFactory(web3, providerFn) {
    *        to return a new version of the OasisContract with the same provider set.
    */
   return function OasisContract(abi, address, options, provider) {
-    let c = new EthContract(abi, address, options);
+    const c = new EthContract(abi, address, options);
+    const from = options && options.from ? options.from : undefined;
 
     utils.objectAssign(this, c);
     this.__proto__ = c.__proto__;
@@ -56,11 +60,10 @@ function makeContractFactory(web3, providerFn) {
       provider.backend = Promise.resolve(provider.getBackend(deployOptions.header));
 
       // Create the txObject that we want to patch and return.
-      let txObject = c.deploy.call(this, deployOptions, callback);
-
+      const txObject = c.deploy.call(this, deployOptions, callback);
       // Methods we want to hook into.
-      let _send = txObject.send;
-      let _estimateGas = txObject.estimateGas;
+      const _send = txObject.send;
+      const _estimateGas = txObject.estimateGas;
 
       // Perform patches.
       txObject.send = (options) => {
@@ -68,17 +71,26 @@ function makeContractFactory(web3, providerFn) {
         options.header = deployOptions.header;
         return _send.call(this, options);
       };
+
       txObject.estimateGas = (options) => {
         options = options || {};
         options.header = deployOptions.header;
         return _estimateGas.call(this, options);
       };
 
+      if (invokeProvider && from) {
+        // in order to be able to call invoke it is necessary to know
+        // the address that originates the call.
+        txObject.invoke = (options) => {
+          return invokeProvider.invoke(from, this, txObject.send, options);
+        };
+      }
+
       // Return the patched object.
       return txObject;
     };
 
-    let expiry = new web3.extend.Method({
+    const expiry = new web3.extend.Method({
       name: 'expiry',
       call: 'oasis_getExpiry',
       params: 1,
@@ -92,8 +104,7 @@ function makeContractFactory(web3, providerFn) {
     });
     expiry.setRequestManager(web3._requestManager);
     expiry.attachToObject(this);
-  }
-
+  };
 }
 
 module.exports = makeContractFactory;
