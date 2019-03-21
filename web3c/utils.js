@@ -33,13 +33,20 @@ function createResolvablePromise() {
  * to return a value for an asynchronous operation
  */
 function createResolvableEmitter() {
-  const promise = createResolvablePromise();
+  return resolvableEmitterFromPromise(createResolvablePromise);
+}
+
+/**
+ * creates a resolvableEmitter from a promise
+ */
+function resolvableEmitterFromPromise(promise) {
   Emitter(promise);
   return promise;
 }
 
 module.exports = {
   objectAssign,
-  createResolvablePromise: createResolvablePromise,
-  createResolvableEmitter: createResolvableEmitter,
+  createResolvablePromise,
+  createResolvableEmitter,
+  resolvableEmitterFromPromise,
 };

@@ -371,7 +371,7 @@ describe('Web3', () => {
     const { contract, emitter } = await deployContract({ confidential: false });
 
     let eventCount = 0;
-    const promise = contract.methods.incrementCounter().invoke({ gas: '0x10000' })
+    const promise = contract.methods.getCounter().invoke({ gas: '0x10000' })
       .on('transactionHash', hash => {
         assert.equal(hash, expectedTransactionHash);
         eventCount++;
@@ -380,11 +380,15 @@ describe('Web3', () => {
 
     emitter.emit('data', {
       transactionHash: expectedTransactionHash,
-      returnData: [0, 1, 2, 3]
+      returnData: [
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 1]
     });
 
     const result = await promise;
-    assert.equal(result, '0x00010203');
+    assert.equal(result, 1);
     assert.equal(eventCount, 1);
   });
 

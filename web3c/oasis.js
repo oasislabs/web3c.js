@@ -341,39 +341,67 @@ class Oasis {
     options.oasis = this;
     this._invokeSubscription = new InvokeSubscriptions(options);
 
-    this._executeSend = (fromAddress, send, contract, sendArgs) => {
-      const resolvableEmitter = utils.createResolvableEmitter();
+    this._executeSend = (fromAddress, methodName, contract, send, ...sendArgs) => {
+      const promise = utils.createResolvablePromise();
       const address = contract.address ? contract.address : contract.options.address;
       const sendEmitter = send.apply(contract, sendArgs);
+      const outputs = this._findOutputs(methodName, contract);
+
+      const resolvableEmitter = utils.resolvableEmitterFromPromise(promise.then(result =>
+        contract._decodeMethodReturn(outputs, result)));
+      let transactionHash;
 
       sendEmitter
         .on('error', err => resolvableEmitter.emit('error', err))
         .on('receipt', receipt => resolvableEmitter.emit('receipt', receipt))
         .on('transactionHash', hash => {
+          transactionHash = hash;
           this._invokeSubscription.pushExpectedTransaction(fromAddress, {
             transactionHash: hash,
             toAddress: address,
-            promise: resolvableEmitter
+            promise: promise,
           });
 
           resolvableEmitter.emit('transactionHash', hash);
         })
         .then(receipt => resolvableEmitter.emit('receipt', receipt))
-        .catch(err => resolvableEmitter.resolver.reject(err));
+        .catch(err => {
+          promise.resolver.reject(err);
+          if (transactionHash) {
+            this._invokeSubscription.removeExpectedTransaction(fromAddress, transactionHash);
+          }
+        });
 
       return resolvableEmitter;
     };
 
-    this._invoke = (fromAddress, contract, send, ...sendArgs) => {
+    this._findOutputs = (methodName, contract) => {
+      const jsonInterface = contract && contract._jsonInterface
+        ? contract._jsonInterface
+        : undefined;
+      if (jsonInterface === undefined || !jsonInterface.length || jsonInterface.length < 1) {
+        return [];
+      }
+
+      for (let i = 0; i < jsonInterface.length; i++) {
+        const method = jsonInterface[i];
+        if (method.name === methodName) {
+          return method.outputs;
+        }
+      }
+
+      return [];
+    };
+
+    this._invoke = (fromAddress, methodName, contract, send, ...sendArgs) => {
       if (typeof send !== 'function') {
         throw new Error('type of send must be a function');
       }
-
       // make sure that the subscription exists before making the
       // call to send
       this._invokeSubscription.prepareSubscription(fromAddress);
 
-      return this._executeSend(fromAddress, send, contract, sendArgs);
+      return this._executeSend(fromAddress, methodName, contract, send, ...sendArgs);
     };
   }
 

@@ -78,7 +78,7 @@ function makeContractFactory(options, providerFn) {
           contract.methods[key] = (...args) => {
             const om = original.apply(contract.methods, args);
             om.invoke = (options) => {
-              return invokeProvider._invoke(from, contract, om.send.bind(om), options);
+              return invokeProvider._invoke(from, key, contract, om.send.bind(om), options);
             };
             return om;
           };

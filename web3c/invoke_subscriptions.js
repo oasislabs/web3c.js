@@ -89,6 +89,15 @@ class InvokeSubscriptions {
     }
   }
 
+  removeExpectedTransaction(fromAddress, transactionHash) {
+    const subscription = this.subscriptions[fromAddress];
+    if (!subscription) {
+      return;
+    }
+
+    delete subscription.expectedTransactions[transactionHash];
+  }
+
   pushExpectedTransaction(fromAddress, expectedTransaction) {
 
     const subscription = this.getSubscription(fromAddress);
