@@ -331,40 +331,53 @@ describe('Web3', () => {
     }).on('error', done);
   });
 
-  it('should not have method invoke in its API', () => {
-    const _web3c = new web3c(gw);
-    const counterContract = new _web3c.oasis.Contract(artifact.abi, undefined, {});
+  async function deployContract(options = {}) {
+    const confidential = !!options.confidential;
+    const _web3c = web3cMockSigner(gw);
+    const emitter = new EventEmitter();
+    const fromAddress = confidential
+      ? gateway.responses.OASIS_DEPLOY_HEADER_ADDRESS
+      : gateway.responses.OASIS_DEPLOY_HEADER_PLAINTEXT_ADDRESS;
+    const counterContract = new _web3c.oasis.Contract(artifact.abi, undefined, {
+      from: fromAddress
+    });
 
-    assert.equal(counterContract.invoke, undefined);
-  });
+    const contract = await counterContract.deploy({
+      data: artifact.bytecode,
+      header: {
+        expiry: gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY,
+        confidential: confidential
+      }
+    }).send({ gas: '0x10000' });
+
+    _web3c.oasis._oasisExclusiveSubscriptions.subscribe = function(type, filter) {
+      assert.equal(filter.fromAddress, fromAddress);
+      return emitter;
+    };
+
+    _web3c.oasis.isConfidential = () => new Promise(resolve => resolve(confidential));
+
+    if (confidential) {
+      _web3c.oasis.keyManager.encrypt = (text) => new Promise((resolve) => resolve(text));
+      _web3c.oasis.keyManager.decrypt = (text) => new Promise((resolve) => resolve(text));
+    }
+
+    return { contract: contract, emitter: emitter };
+  }
 
   it('should be able to call invoke for non confidential contract', async () => {
-    const _web3c = new web3c(gw);
-    const emitter = new EventEmitter();
     const expectedTransactionHash =
-      '0xaaaaaa5f3564e8b30262fb931988888bbb203692bba9763a45c61b25ce531840';
-    const fromAddress = gateway.responses.OASIS_DEPLOY_HEADER_PLAINTEXT_ADDRESS;
-    const counterContract = new _web3c.oasis.Contract(artifact.abi, undefined, {
-      from: fromAddress
-    });
+          '0xaaaaaa5f3564e8b30262fb931988888bbb203692bba9763a45c61b25ce531000';
+    const { contract, emitter } = await deployContract({ confidential: false });
 
-    _web3c.oasis._oasisExclusiveSubscriptions.subscribe = function(type, filter) {
-      assert.equal(type, 'completedTransaction');
-      assert.equal(filter.fromAddress, fromAddress);
-      return emitter;
-    };
+    let eventCount = 0;
+    const promise = contract.methods.incrementCounter().invoke({ gas: '0x10000' })
+      .on('transactionHash', hash => {
+        assert.equal(hash, expectedTransactionHash);
+        eventCount++;
+      })
+      .on('error', err => assert.fail(err));
 
-    _web3c.oasis.isConfidential = () => new Promise(resolve => resolve(false));
-
-    const contract = await counterContract.deploy({
-      data: artifact.bytecode,
-      header: {
-        expiry: gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY,
-        confidential: false
-      }
-    });
-
-    const promise = contract.invoke({ gas: '0x10000' });
     emitter.emit('data', {
       transactionHash: expectedTransactionHash,
       returnData: [0, 1, 2, 3]
@@ -372,46 +385,26 @@ describe('Web3', () => {
 
     const result = await promise;
     assert.equal(result, '0x00010203');
+    assert.equal(eventCount, 1);
   });
 
-  it('should be able to call invoke for confidential contract', async () => {
-    const _web3c = new web3c(gw);
-    const emitter = new EventEmitter();
-    const expectedTransactionHash =
-          '0xaaaaaa5f3564e8b30262fb931988888bbb203692bba9763a45c61b25ce531840';
-    const fromAddress = gateway.responses.OASIS_DEPLOY_HEADER_PLAINTEXT_ADDRESS;
-    const counterContract = new _web3c.oasis.Contract(artifact.abi, undefined, {
-      from: fromAddress
-    });
+  it('should call invoke and reject promise on subscription failure', async () => {
+    const { contract, emitter } = await deployContract({ confidential: false });
 
-    _web3c.oasis.keyManager.encrypt = (text) => new Promise((resolve) => resolve(text));
-    _web3c.oasis.keyManager.decrypt = (text) => new Promise((resolve) => resolve(text));
+    const promise = contract.methods.incrementCounter().invoke({ gas: '0x10000' })
+      .on('transactionHash', () => {
+        emitter.emit('error', new Error('subscription failed'));
+      })
+      .on('error', err => assert.fail(err));
 
-    _web3c.oasis._oasisExclusiveSubscriptions.subscribe = function(type, filter) {
-      assert.equal(type, 'completedTransaction');
-      assert.equal(filter.fromAddress, fromAddress);
-      return emitter;
-    };
-
-    _web3c.oasis.isConfidential = () => new Promise(resolve => resolve(true));
-
-    const contract = await counterContract.deploy({
-      data: artifact.bytecode,
-      header: {
-        expiry: gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY,
-        confidential: false
-      }
-    });
-
-    const promise = contract.invoke({ gas: '0x10000' });
-    emitter.emit('data', {
-      transactionHash: expectedTransactionHash,
-      returnData: [0, 1, 2, 3]
-    });
-
-    const result = await promise;
-    assert.equal(result, '0x00010203');
+    try {
+      await promise;
+      assert.fail(new Error('expected promise to throw error'));
+    } catch (e) {
+      assert.equal(e.message.includes('subscription failed'), true);
+    }
   });
+
 });
 
 /**

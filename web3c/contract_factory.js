@@ -66,10 +66,25 @@ function makeContractFactory(options, providerFn) {
       const _estimateGas = txObject.estimateGas;
 
       // Perform patches.
-      txObject.send = (options) => {
+      txObject.send = async (options) => {
         options = options || {};
         options.header = deployOptions.header;
-        return _send.call(this, options);
+        const contract = await _send.call(this, options);
+
+        // for each contract method attach invoke
+        Object.keys(contract.methods).forEach(key => {
+          const original = contract.methods[key];
+
+          contract.methods[key] = (...args) => {
+            const om = original.apply(contract.methods, args);
+            om.invoke = (options) => {
+              return invokeProvider._invoke(from, contract, om.send.bind(om), options);
+            };
+            return om;
+          };
+        });
+
+        return contract;
       };
 
       txObject.estimateGas = (options) => {
@@ -77,14 +92,6 @@ function makeContractFactory(options, providerFn) {
         options.header = deployOptions.header;
         return _estimateGas.call(this, options);
       };
-
-      if (invokeProvider && from) {
-        // in order to be able to call invoke it is necessary to know
-        // the address that originates the call.
-        txObject.invoke = (options) => {
-          return invokeProvider.invoke(from, this, txObject.send, options);
-        };
-      }
 
       // Return the patched object.
       return txObject;
