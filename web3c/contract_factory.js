@@ -66,25 +66,42 @@ function makeContractFactory(options, providerFn) {
       const _estimateGas = txObject.estimateGas;
 
       // Perform patches.
-      txObject.send = async (options) => {
+      txObject.send = (options) => {
         options = options || {};
         options.header = deployOptions.header;
-        const contract = await _send.call(this, options);
+        const originalResolvableEmitter = _send.call(this, options);
 
-        // for each contract method attach invoke
-        Object.keys(contract.methods).forEach(key => {
-          const original = contract.methods[key];
+        // create a new promise with the patched contract
+        // as a result on success
+        const promise = originalResolvableEmitter
+          .then(contract => {
+            // for each contract method attach invoke
+            Object.keys(contract.methods).forEach(key => {
+              const original = contract.methods[key];
 
-          contract.methods[key] = (...args) => {
-            const om = original.apply(contract.methods, args);
-            om.invoke = (options) => {
-              return invokeProvider._invoke(from, key, contract, om.send.bind(om), options);
-            };
-            return om;
-          };
-        });
+              contract.methods[key] = (...args) => {
+                const om = original.apply(contract.methods, args);
+                om.invoke = (options) => {
+                  return invokeProvider._invoke(from, key, contract, om.send.bind(om), options);
+                };
+                return om;
+              };
+            });
+          });
 
-        return contract;
+
+        // create new resolvableEmitter that will be send to the user
+        // with the patch contract
+        const resultResolvableEmitter = utils.resolvableEmitterFromPromise(promise);
+
+        // attach original events from send to new resolvableEmitter
+        // that will be returned to the user
+        originalResolvableEmitter
+          .on('receipt', receipt => resultResolvableEmitter.emit('receipt', receipt))
+          .on('error', err => resultResolvableEmitter.emit('error', err));
+
+
+        return resultResolvableEmitter;
       };
 
       txObject.estimateGas = (options) => {

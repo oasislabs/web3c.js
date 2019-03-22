@@ -33,7 +33,7 @@ function createResolvablePromise() {
  * to return a value for an asynchronous operation
  */
 function createResolvableEmitter() {
-  return resolvableEmitterFromPromise(createResolvablePromise);
+  return resolvableEmitterFromPromise(createResolvablePromise());
 }
 
 /**
