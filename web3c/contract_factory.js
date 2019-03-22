@@ -94,14 +94,10 @@ function makeContractFactory(web3, providerFn) {
     expiry.setRequestManager(web3._requestManager);
     expiry.attachToObject(this);
 
-    Object.defineProperty(this, 'header', {
-      enumerable: false,
-      configurable: false,
-      async get () {
-        let body = await web3.eth.getCode(address);
-        return DeployHeader.private.DeployHeaderHexReader.body(body)
-      }
-    });
+    this.getHeader = async () => {
+      let body = await web3.eth.getCode(address);
+      return DeployHeader.private.DeployHeaderHexReader.body(body);
+    }
   }
 
 }
