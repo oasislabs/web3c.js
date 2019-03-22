@@ -96,7 +96,7 @@ function makeContractFactory(web3, providerFn) {
 
     this.getHeader = async () => {
       let body = await web3.eth.getCode(address);
-      return DeployHeader.private.DeployHeaderHexReader.body(body)
+      return DeployHeader.private.DeployHeaderHexReader.body(body);
     }
   }
 
