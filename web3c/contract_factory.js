@@ -87,8 +87,9 @@ function makeContractFactory(options, providerFn) {
                 return om;
               };
             });
-          });
 
+            return contract;
+          });
 
         // create new resolvableEmitter that will be send to the user
         // with the patch contract
