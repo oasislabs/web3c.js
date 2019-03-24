@@ -20,6 +20,28 @@ function makeContractFactory(options, providerFn) {
   const invokeProvider = options.invokeProvider;
   const EthContract = web3.eth.Contract;
 
+  function retrieveNotificationCallbacks(provider) {
+    if (provider && typeof provider.notificationCallbacks === 'object' &&
+        provider.notificationCallbacks.length > 0) {
+      const callbacks = provider.notificationCallbacks;
+      return callbacks.slice(0, callbacks.length);
+
+    } else {
+      return [];
+    }
+  }
+
+  function restoreNotificationCallbacks(provider, callbacks) {
+    callbacks = callbacks || [];
+
+    if (provider && typeof provider.notificationCallbacks === 'object' &&
+        provider.notificationCallbacks.length === 0) {
+      callbacks.forEach(function (callback) {
+        provider.notificationCallbacks.push(callback);
+      });
+    }
+  }
+
   /**
    * @param {Object} abi
    * @param {String} address
@@ -45,7 +67,13 @@ function makeContractFactory(options, providerFn) {
       provider = providerFn(address, options);
     }
 
+    // setProvider may clear the existing subscriptions, so in order to
+    // keep the state of the provider, we restore them after a call to
+    // setProvider
+    const currentProvider = c.currentProvider;
+    const notificationCallbacks = retrieveNotificationCallbacks(currentProvider);
     c.setProvider.call(this, provider);
+    restoreNotificationCallbacks(currentProvider, notificationCallbacks);
 
     this.clone = () => {
       return new OasisContract(this.options.jsonInterface, this.options.address, this.options, provider);

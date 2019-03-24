@@ -165,7 +165,7 @@ class InvokeSubscriptions {
     }
 
     if (subscription.expectedTransactions[data.transactionHash]) {
-      const expectedTransaction = this.expectedTransactions[data.transactionHash];
+      const expectedTransaction = subscription.expectedTransactions[data.transactionHash];
       delete subscription.expectedTransactions[data.transactionHash];
       this.forwardData(data, expectedTransaction.toAddress, expectedTransaction.promise);
 

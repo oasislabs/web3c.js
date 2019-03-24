@@ -353,7 +353,6 @@ class Oasis {
 
       sendEmitter
         .on('error', err => resolvableEmitter.emit('error', err))
-        .on('receipt', receipt => resolvableEmitter.emit('receipt', receipt))
         .on('transactionHash', hash => {
           transactionHash = hash;
           this._invokeSubscription.pushExpectedTransaction(fromAddress, {
