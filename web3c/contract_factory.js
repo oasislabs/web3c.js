@@ -41,7 +41,10 @@ function makeContractFactory(web3, providerFn) {
       provider = providerFn(address, options);
     }
 
-    c.setProvider.call(this, provider);
+    if (this._requestManager && this._requestManager.provider) {
+      this._requestManager = new this._requestManager.constructor();
+    }
+    c.setProvider.call(this, provider);    
 
     this.clone = () => {
       return new OasisContract(this.options.jsonInterface, this.options.address, this.options, provider);
