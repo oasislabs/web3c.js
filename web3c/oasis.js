@@ -7,7 +7,9 @@ const ProviderConfidentialBackend = require('./provider_confidential_backend');
 const ConfidentialSendTransform = ProviderConfidentialBackend.private.ConfidentialSendTransform;
 const makeContractFactory = require('./contract_factory');
 const Subscriptions = require('web3-core-subscriptions').subscriptions;
+const InvokeSubscriptions = require('./invoke_subscriptions.js');
 const bytes = require('./bytes');
+const utils = require('./utils');
 
 /**
  * Oasis
@@ -31,6 +33,7 @@ class Oasis {
     this._setupContract(options);
     this._setupWrappedAccounts(options);
     this._setupSubscribe(options);
+    this._setupInvoke(options);
   }
 
   _setupKeyManager(options) {
@@ -100,9 +103,13 @@ class Oasis {
    * all outgoing/incoming requests according to the web3c spec.
    */
   _setupContract(options) {
-    let web3 = options.web3;
+    const web3 = options.web3;
+    const factoryOptions = {
+      web3,
+      invokeProvider: this
+    };
 
-    this.Contract = makeContractFactory(web3, (address, contractOptions) => {
+    this.Contract = makeContractFactory(factoryOptions, (address, contractOptions) => {
       let provider = new OasisProvider(this.keyManager, web3._requestManager);
 
       let keymanager = this.keyManager;
@@ -171,6 +178,7 @@ class Oasis {
   }
 
   _setupSubscribe(options) {
+    this._subscriptions = {};
     this._oasisExclusiveSubscriptions = {};
     const completedTransaction = new Subscriptions({
       name: 'subscribe',
@@ -186,6 +194,21 @@ class Oasis {
     completedTransaction.setRequestManager(options.web3._requestManager);
     completedTransaction.attachToObject(this._oasisExclusiveSubscriptions);
 
+    // the behaviour of _subscribeCompletedTransaction is a bit tricky
+    // to handle:
+    //  * when filter contains `address`, it will use that `address` to
+    //   find out if the data received needs to be decrypted.
+    //
+    //  * when the filter is used to filter on a transactionHash, the
+    //   use of the `address` field is consistent, because it is easy to
+    //   pass on the address of the contract that the transaction executes.
+    //
+    // * when the filter is used to filter on fromAddress, it is possible
+    //   that the subscription receives confidential transactions as well
+    //   as non confidential ones through the same subscription. This means
+    //   that in that case the use of `address` is discouraged. It should be
+    //   the developer who implements the logic to only decrypt the data
+    //   of the transactions they know are for confidential contracts.
     this._subscribeCompletedTransaction = function(filter) {
       const address = filter && filter.address ? filter.address : null;
       if (address) {
@@ -221,9 +244,9 @@ class Oasis {
         if (isConfidential) {
           try {
             const returnData = await this.keyManager.decrypt(bytes.toHex(data.returnData));
-
             data.returnData = returnData;
             emitter.emit('data', data);
+
           } catch (e) {
             let err = new Error('failed to decrypt returnData field: ' + e.message);
             emitter.emit('error', err);
@@ -309,6 +332,75 @@ class Oasis {
         });
 
       return wrappedEmitter;
+    };
+  }
+
+  _setupInvoke(options = {}) {
+    // for invoke to work, we need to keep track of which subscriptions are currently
+    // available to avoid recreating subscriptions.
+    options.oasis = this;
+    this._invokeSubscription = new InvokeSubscriptions(options);
+
+    this._executeSend = (fromAddress, methodName, contract, send, ...sendArgs) => {
+      const promise = utils.createResolvablePromise();
+      const address = contract.address ? contract.address : contract.options.address;
+      const sendEmitter = send.apply(contract, sendArgs);
+      const outputs = this._findOutputs(methodName, contract);
+
+      const resolvableEmitter = utils.resolvableEmitterFromPromise(promise.then(result =>
+        contract._decodeMethodReturn(outputs, result)));
+      let transactionHash;
+
+      sendEmitter
+        .on('error', err => resolvableEmitter.emit('error', err))
+        .on('transactionHash', hash => {
+          transactionHash = hash;
+          this._invokeSubscription.pushExpectedTransaction(fromAddress, {
+            transactionHash: hash,
+            toAddress: address,
+            promise: promise,
+          });
+
+          resolvableEmitter.emit('transactionHash', hash);
+        })
+        .then(receipt => resolvableEmitter.emit('receipt', receipt))
+        .catch(err => {
+          promise.resolver.reject(err);
+          if (transactionHash) {
+            this._invokeSubscription.removeExpectedTransaction(fromAddress, transactionHash);
+          }
+        });
+
+      return resolvableEmitter;
+    };
+
+    this._findOutputs = (methodName, contract) => {
+      const jsonInterface = contract && contract._jsonInterface
+        ? contract._jsonInterface
+        : undefined;
+      if (jsonInterface === undefined || !jsonInterface.length || jsonInterface.length < 1) {
+        return [];
+      }
+
+      for (let i = 0; i < jsonInterface.length; i++) {
+        const method = jsonInterface[i];
+        if (method.name === methodName) {
+          return method.outputs;
+        }
+      }
+
+      return [];
+    };
+
+    this._invoke = (fromAddress, methodName, contract, send, ...sendArgs) => {
+      if (typeof send !== 'function') {
+        throw new Error('type of send must be a function');
+      }
+      // make sure that the subscription exists before making the
+      // call to send
+      this._invokeSubscription.prepareSubscription(fromAddress);
+
+      return this._executeSend(fromAddress, methodName, contract, send, ...sendArgs);
     };
   }
 

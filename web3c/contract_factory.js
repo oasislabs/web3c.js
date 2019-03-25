@@ -15,8 +15,11 @@ const DeployHeader = require('./deploy_header');
  *          Contract constructor, for example { saveSession: false } for confidential
  *          contracts.
  */
-function makeContractFactory(web3, providerFn) {
-  let EthContract = web3.eth.Contract;
+function makeContractFactory(options, providerFn) {
+  const web3 = options.web3;
+  const invokeProvider = options.invokeProvider;
+  const EthContract = web3.eth.Contract;
+
   /**
    * @param {Object} abi
    * @param {String} address
@@ -28,7 +31,8 @@ function makeContractFactory(web3, providerFn) {
    *        to return a new version of the OasisContract with the same provider set.
    */
   return function OasisContract(abi, address, options, manager) {
-    let c = new EthContract(abi, address, options);
+    const c = new EthContract(abi, address, options);
+    const from = options && options.from ? options.from : undefined;
 
     utils.objectAssign(this, c, true, true);
     this.__proto__ = c.__proto__;
@@ -62,18 +66,51 @@ function makeContractFactory(web3, providerFn) {
       this._requestManager.provider.backend = Promise.resolve(this._requestManager.provider.getBackend(deployOptions.header));
 
       // Create the txObject that we want to patch and return.
-      let txObject = c.deploy.call(this, deployOptions, callback);
-
+      const txObject = c.deploy.call(this, deployOptions, callback);
       // Methods we want to hook into.
-      let _send = txObject.send;
-      let _estimateGas = txObject.estimateGas;
+      const _send = txObject.send;
+      const _estimateGas = txObject.estimateGas;
 
       // Perform patches.
       txObject.send = (options) => {
         options = options || {};
         options.header = deployOptions.header;
-        return _send.call(this, options);
+        const originalResolvableEmitter = _send.call(this, options);
+
+        // create a new promise with the patched contract
+        // as a result on success
+        const promise = originalResolvableEmitter
+          .then(contract => {
+            // for each contract method attach invoke
+            Object.keys(contract.methods).forEach(key => {
+              const original = contract.methods[key];
+
+              contract.methods[key] = (...args) => {
+                const om = original.apply(contract.methods, args);
+                om.invoke = (options) => {
+                  return invokeProvider._invoke(from, key, contract, om.send.bind(om), options);
+                };
+                return om;
+              };
+            });
+
+            return contract;
+          });
+
+        // create new resolvableEmitter that will be send to the user
+        // with the patch contract
+        const resultResolvableEmitter = utils.resolvableEmitterFromPromise(promise);
+
+        // attach original events from send to new resolvableEmitter
+        // that will be returned to the user
+        originalResolvableEmitter
+          .on('receipt', receipt => resultResolvableEmitter.emit('receipt', receipt))
+          .on('error', err => resultResolvableEmitter.emit('error', err));
+
+
+        return resultResolvableEmitter;
       };
+
       txObject.estimateGas = (options) => {
         options = options || {};
         options.header = deployOptions.header;
@@ -84,7 +121,7 @@ function makeContractFactory(web3, providerFn) {
       return txObject;
     };
 
-    let expiry = new web3.extend.Method({
+    const expiry = new web3.extend.Method({
       name: 'expiry',
       call: 'oasis_getExpiry',
       params: 1,
@@ -102,9 +139,8 @@ function makeContractFactory(web3, providerFn) {
     this.getHeader = async () => {
       let body = await web3.eth.getCode(address);
       return DeployHeader.private.DeployHeaderHexReader.body(body);
-    }
-  }
-
+    };
+  };
 }
 
 module.exports = makeContractFactory;

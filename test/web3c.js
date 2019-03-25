@@ -331,6 +331,84 @@ describe('Web3', () => {
     }).on('error', done);
   });
 
+  async function deployContract(options = {}) {
+    const confidential = !!options.confidential;
+    const _web3c = web3cMockSigner(gw);
+    const emitter = new EventEmitter();
+    const fromAddress = confidential
+      ? gateway.responses.OASIS_DEPLOY_HEADER_ADDRESS
+      : gateway.responses.OASIS_DEPLOY_HEADER_PLAINTEXT_ADDRESS;
+    const counterContract = new _web3c.oasis.Contract(artifact.abi, undefined, {
+      from: fromAddress
+    });
+
+    const contract = await counterContract.deploy({
+      data: artifact.bytecode,
+      header: {
+        expiry: gateway.responses.OASIS_DEPLOY_HEADER_EXPIRY,
+        confidential: confidential
+      }
+    }).send({ gas: '0x10000' });
+
+    _web3c.oasis._oasisExclusiveSubscriptions.subscribe = function(type, filter) {
+      assert.equal(filter.fromAddress, fromAddress);
+      return emitter;
+    };
+
+    _web3c.oasis.isConfidential = () => new Promise(resolve => resolve(confidential));
+
+    if (confidential) {
+      _web3c.oasis.keyManager.encrypt = (text) => new Promise((resolve) => resolve(text));
+      _web3c.oasis.keyManager.decrypt = (text) => new Promise((resolve) => resolve(text));
+    }
+
+    return { contract: contract, emitter: emitter };
+  }
+
+  it('should be able to call invoke for non confidential contract', async () => {
+    const expectedTransactionHash =
+          '0xaaaaaa5f3564e8b30262fb931988888bbb203692bba9763a45c61b25ce531000';
+    const { contract, emitter } = await deployContract({ confidential: false });
+
+    let eventCount = 0;
+    const promise = contract.methods.getCounter().invoke({ gas: '0x10000' })
+      .on('transactionHash', hash => {
+        assert.equal(hash, expectedTransactionHash);
+        eventCount++;
+      })
+      .on('error', err => assert.fail(err));
+
+    emitter.emit('data', {
+      transactionHash: expectedTransactionHash,
+      returnData: [
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 1]
+    });
+
+    const result = await promise;
+    assert.equal(result, 1);
+    assert.equal(eventCount, 1);
+  });
+
+  it('should call invoke and reject promise on subscription failure', async () => {
+    const { contract, emitter } = await deployContract({ confidential: false });
+
+    const promise = contract.methods.incrementCounter().invoke({ gas: '0x10000' })
+      .on('transactionHash', () => {
+        emitter.emit('error', new Error('subscription failed'));
+      })
+      .on('error', err => assert.fail(err));
+
+    try {
+      await promise;
+      assert.fail(new Error('expected promise to throw error'));
+    } catch (e) {
+      assert.equal(e.message.includes('subscription failed'), true);
+    }
+  });
+
 });
 
 /**
