@@ -20,63 +20,40 @@ function makeContractFactory(options, providerFn) {
   const invokeProvider = options.invokeProvider;
   const EthContract = web3.eth.Contract;
 
-  function retrieveNotificationCallbacks(provider) {
-    if (provider && typeof provider.notificationCallbacks === 'object' &&
-        provider.notificationCallbacks.length > 0) {
-      const callbacks = provider.notificationCallbacks;
-      return callbacks.slice(0, callbacks.length);
-
-    } else {
-      return [];
-    }
-  }
-
-  function restoreNotificationCallbacks(provider, callbacks) {
-    callbacks = callbacks || [];
-
-    if (provider && typeof provider.notificationCallbacks === 'object' &&
-        provider.notificationCallbacks.length === 0) {
-      callbacks.forEach(function (callback) {
-        provider.notificationCallbacks.push(callback);
-      });
-    }
-  }
-
   /**
    * @param {Object} abi
    * @param {String} address
    * @param {Object} options
    * @param {String} options.key The longterm key of the contract.
    * @param {bool}   options.saveSession false to disable storing keys.
-   * @param {OasisProvider?} provider is provided iff the clone method has been called. This
+   * @param {RequestManager?} manager is provided iff the clone method has been called. This
    *        is used in the case where we have deployed an OasisContract via `send` and we want
    *        to return a new version of the OasisContract with the same provider set.
    */
-  return function OasisContract(abi, address, options, provider) {
+  return function OasisContract(abi, address, options, manager) {
     const c = new EthContract(abi, address, options);
     const from = options && options.from ? options.from : undefined;
 
-    utils.objectAssign(this, c);
+    utils.objectAssign(this, c, true, true);
     this.__proto__ = c.__proto__;
 
     // Object.DefineProperty's are not copied otherwise.
     this.defaultAccount = c.constructor.defaultAccount;
     this.defaultBlock = c.constructor.defaultBlock || 'latest';
 
-    if (!provider) {
-      provider = providerFn(address, options);
+    if (manager) {
+      this._requestManager = manager;
+    } else {
+      this._requestManager = new this._requestManager.constructor(providerFn(address, options));
     }
-
-    // setProvider may clear the existing subscriptions, so in order to
-    // keep the state of the provider, we restore them after a call to
-    // setProvider
-    const currentProvider = c.currentProvider;
-    const notificationCallbacks = retrieveNotificationCallbacks(currentProvider);
-    c.setProvider.call(this, provider);
-    restoreNotificationCallbacks(currentProvider, notificationCallbacks);
+    this._provider = this._requestManager.provider;
+    c._requestManager = this._requestManager;
+    c._provider = this._provider;
+    this.currentProvider = this._provider;
+    this._ethAccounts = web3.oasis.accounts;
 
     this.clone = () => {
-      return new OasisContract(this.options.jsonInterface, this.options.address, this.options, provider);
+      return new OasisContract(this.options.jsonInterface, this.options.address, this.options, this._requestManager);
     };
     // Hook deploy so that we can pass in the Oasis contract deployment header
     // as an extra argument. For example, contract.deploy({ data, header: { expiry } });
@@ -86,7 +63,7 @@ function makeContractFactory(options, providerFn) {
       deployOptions = deployOptions || {};
 
       // Configure the provider to be confidential (or not) based upon the contract's deploy header.
-      provider.backend = Promise.resolve(provider.getBackend(deployOptions.header));
+      this._requestManager.provider.backend = Promise.resolve(this._requestManager.provider.getBackend(deployOptions.header));
 
       // Create the txObject that we want to patch and return.
       const txObject = c.deploy.call(this, deployOptions, callback);
