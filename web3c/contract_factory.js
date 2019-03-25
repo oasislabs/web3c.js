@@ -30,7 +30,7 @@ function makeContractFactory(web3, providerFn) {
   return function OasisContract(abi, address, options, provider) {
     let c = new EthContract(abi, address, options);
 
-    utils.objectAssign(this, c);
+    utils.objectAssign(this, c, true, true);
     this.__proto__ = c.__proto__;
 
     // Object.DefineProperty's are not copied otherwise.
@@ -42,9 +42,10 @@ function makeContractFactory(web3, providerFn) {
     }
 
     if (this._requestManager && this._requestManager.provider) {
-      this._requestManager = new this._requestManager.constructor();
+      this._requestManager = new this._requestManager.constructor(provider);
+    } else {
+      c.setProvider.call(this, provider);    
     }
-    c.setProvider.call(this, provider);    
 
     this.clone = () => {
       return new OasisContract(this.options.jsonInterface, this.options.address, this.options, provider);
