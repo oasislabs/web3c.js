@@ -1,3 +1,7 @@
+const utils = require('./utils');
+
+const ONE_MINUTE = 60000;
+
 /**
  * InvokeSubscription is part of the private API. It's a convenience
  * class to encapsulate the state for managing subscriptions for the
@@ -16,13 +20,16 @@
  *  cache.
  */
 class InvokeSubscriptions {
-  
+
   constructor(options) {
     // options is expected to be an object
-    // { 
+    // {
     //    oasis: instance of Oasis
+    //    [inactiveSubscriptionTimeout]: integer to define the inactive timeout
+    //      of a subscription
     // }
     this.oasis = options.oasis;
+    this.inactiveSubscriptionTimeout = options.inactiveSubscriptionTimeout || ONE_MINUTE;
     this.subscriptions = {};
   }
 
@@ -51,6 +58,7 @@ class InvokeSubscriptions {
     });
 
     const subscription = {
+      lastActive: Date.now(),
       fromAddress: fromAddress,
       emitter: emitter,
       receivedTransactions: {},
@@ -109,11 +117,15 @@ class InvokeSubscriptions {
     const hash = expectedTransaction.transactionHash;
     const toAddress = expectedTransaction.toAddress;
     const promise = expectedTransaction.promise;
+    subscription.lastActive = Date.now();
 
     if (subscription.receivedTransactions[hash]) {
       // in the case that we have already received the transaction
       // we can resolve the promise here and now
       const data = subscription.receivedTransactions[hash];
+      clearTimeout(data.timeout);
+      data.timeout = null;
+
       delete subscription.receivedTransactions[hash];
       this.forwardData(data, toAddress, promise);
       return promise;
@@ -126,8 +138,15 @@ class InvokeSubscriptions {
     subscription.expectedTransactions[hash] = {
       transactionHash: hash,
       toAddress: toAddress,
-      promise: promise
+      promise: promise,
+      timeout: null
     };
+
+    subscription.expectedTransactions[hash].timeout = setTimeout(() => {
+      promise.resolver.reject(new Error('subscription timed out'));
+      delete subscription.expectedTransactions[hash];
+      this.removeIfInactive(fromAddress);
+    }, this.inactiveSubscriptionTimeout);
 
     return promise;
   }
@@ -161,6 +180,23 @@ class InvokeSubscriptions {
     this.cleanupSubscription(fromAddress, err);
   }
 
+  removeIfInactive(fromAddress) {
+    const subscription = this.subscriptions[fromAddress];
+    if (!subscription) {
+      return;
+    }
+
+    const now = Date.now();
+    const isInactive = (now - subscription.lastActive) > this.inactiveSubscriptionTimeout;
+    const hasNoPendingRequests = utils.isEmptyObject(subscription.expectedTransactions) ||
+          utils.isEmptyObject(subscription.receivedTransactions);
+
+    if (isInactive && hasNoPendingRequests) {
+      this.cleanupSubscription(fromAddress, new Error('subscription has been inactive for more than ' +
+        'the inactive subscription timeout ' + this.inactiveSubscriptionTimeout + ' ms'));
+    }
+  }
+
   handleData(fromAddress, data) {
     const subscription = this.subscriptions[fromAddress];
     if (!subscription) {
@@ -172,10 +208,21 @@ class InvokeSubscriptions {
     if (subscription.expectedTransactions[data.transactionHash]) {
       const expectedTransaction = subscription.expectedTransactions[data.transactionHash];
       delete subscription.expectedTransactions[data.transactionHash];
+      clearTimeout(expectedTransaction.timeout);
+      expectedTransaction.timeout = null;
       this.forwardData(data, expectedTransaction.toAddress, expectedTransaction.promise);
 
     } else {
-      subscription.receivedTransactions[data.transactionHash] = data;
+      subscription.receivedTransactions[data.transactionHash] = {
+        transactionHash: data.transactionHash,
+        returnData: data.returnData,
+        timeout: null
+      };
+
+      subscription.receivedTransactions[data.transactionHash].timeout = setTimeout(() => {
+        delete subscription.expectedTransactions[data.transactionHash];
+        this.removeIfInactive(fromAddress);
+      }, this.inactiveSubscriptionTimeout);
     }
   }
 }
