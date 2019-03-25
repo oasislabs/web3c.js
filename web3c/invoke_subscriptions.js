@@ -16,7 +16,12 @@
  *  cache.
  */
 class InvokeSubscriptions {
+  
   constructor(options) {
+    // options is expected to be an object
+    // { 
+    //    oasis: instance of Oasis
+    // }
     this.oasis = options.oasis;
     this.subscriptions = {};
   }
