@@ -426,7 +426,6 @@ describe('Web3', () => {
       assert.fail(new Error('error timeout should have been raised'));
     } catch(e) {
       assert.equal(e.message, 'subscription timed out');
-      console.log('subscriptions: ', web3c.oasis._invokeSubscription.subscriptions);
       assert.equal(utils.isEmptyObject(web3c.oasis._invokeSubscription.subscriptions), true);
     }
   });

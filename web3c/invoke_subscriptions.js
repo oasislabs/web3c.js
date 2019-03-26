@@ -176,7 +176,6 @@ class InvokeSubscriptions {
   }
 
   cleanupSubscription(fromAddress, err) {
-    console.log('cleanup subscription: ', fromAddress);
     const subscription = this.subscriptions[fromAddress];
     if (!subscription) {
       return;

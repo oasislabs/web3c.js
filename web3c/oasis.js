@@ -374,10 +374,10 @@ class Oasis {
         .then(receipt => resolvableEmitter.emit('receipt', receipt))
         .catch(err => {
           error = err;
-          promise.resolver.reject(err);
           if (transactionHash) {
             this._invokeSubscription.removeExpectedTransaction(fromAddress, transactionHash);
           }
+          promise.resolver.reject(err);
         });
 
       return resolvableEmitter;
