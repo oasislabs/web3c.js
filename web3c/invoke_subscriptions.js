@@ -188,7 +188,7 @@ class InvokeSubscriptions {
 
     const now = Date.now();
     const isInactive = (now - subscription.lastActive) > this.inactiveSubscriptionTimeout;
-    const hasNoPendingRequests = utils.isEmptyObject(subscription.expectedTransactions) ||
+    const hasNoPendingRequests = utils.isEmptyObject(subscription.expectedTransactions) &&
           utils.isEmptyObject(subscription.receivedTransactions);
 
     if (isInactive && hasNoPendingRequests) {
