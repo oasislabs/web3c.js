@@ -6,6 +6,7 @@ const web3c = require('../');
 const gateway = require('./mockgateway');
 const artifact = require('../demo/example.json');
 const HDWalletProvider = require('truffle-hdwallet-provider');
+const utils = require('../web3c/utils');
 
 describe('Web3', () => {
 
@@ -333,7 +334,7 @@ describe('Web3', () => {
 
   async function deployContract(options = {}) {
     const confidential = !!options.confidential;
-    const _web3c = web3cMockSigner(gw);
+    const _web3c = web3cMockSigner(gw, undefined, options);
     const emitter = new EventEmitter();
     const fromAddress = confidential
       ? gateway.responses.OASIS_DEPLOY_HEADER_ADDRESS
@@ -362,7 +363,7 @@ describe('Web3', () => {
       _web3c.oasis.keyManager.decrypt = (text) => new Promise((resolve) => resolve(text));
     }
 
-    return { contract: contract, emitter: emitter };
+    return { contract: contract, emitter: emitter, web3c: _web3c };
   }
 
   it('should be able to call invoke for non confidential contract', async () => {
@@ -409,16 +410,36 @@ describe('Web3', () => {
     }
   });
 
+  it('should cleanup invoke subscription on timeout', async () => {
+    const expectedTransactionHash =
+          '0xaaaaaa5f3564e8b30262fb931988888bbb203692bba9763a45c61b25ce531000';
+    const { contract, emitter, web3c } = await deployContract({
+      confidential: false,
+      inactiveSubscriptionTimeout: 500
+    });
+
+    emitter.on('transactionHash',
+      hash => assert.equal(hash, expectedTransactionHash));
+
+    try {
+      await contract.methods.getCounter().invoke({ gas: '0x10000' });
+      assert.fail(new Error('error timeout should have been raised'));
+    } catch(e) {
+      assert.equal(e.message, 'subscription timed out');
+      assert.equal(utils.isEmptyObject(web3c.oasis._invokeSubscription.subscriptions), true);
+    }
+  });
+
 });
 
 /**
  * @returns a web3c client with a mocked signer for response signature validation.
  */
-function web3cMockSigner(gw) {
+function web3cMockSigner(gw, web3, options) {
   let mockSigner = {
     verify: () => {  }
   };
-  let _web3c = new web3c(gw);
+  let _web3c = new web3c(gw, web3, options);
 
   _web3c.oasis.getPublicKey.method.outputFormatter = (t) => t;
   _web3c.oasis.keyManager.signer = mockSigner;

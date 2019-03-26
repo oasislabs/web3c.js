@@ -44,9 +44,43 @@ function resolvableEmitterFromPromise(promise) {
   return promise;
 }
 
+/**
+ * returns true if the result is an empty object
+ * false otherwise. It will throw an error if the
+ * argument is not an object, null or undefined
+ */
+function isEmptyObject(o) {
+  if (o === null || o === undefined) {
+    return true;
+  }
+
+  if (typeof o !== 'object') {
+    throw new Error('provided argument must be an object');
+  }
+
+  for (const key in o) {
+    if (o.hasOwnProperty(key)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * returns false if the result is an empty object
+ * true otherwise. It will throw an error if the
+ * argument is not an object, null or undefined
+ */
+function isNotEmptyObject(o) {
+  return !isEmptyObject(o);
+}
+
 module.exports = {
   objectAssign,
   createResolvablePromise,
   createResolvableEmitter,
   resolvableEmitterFromPromise,
+  isEmptyObject,
+  isNotEmptyObject
 };

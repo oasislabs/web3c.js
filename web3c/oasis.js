@@ -350,11 +350,19 @@ class Oasis {
       const resolvableEmitter = utils.resolvableEmitterFromPromise(promise.then(result =>
         contract._decodeMethodReturn(outputs, result)));
       let transactionHash;
+      let error;
 
       sendEmitter
         .on('error', err => resolvableEmitter.emit('error', err))
         .on('transactionHash', hash => {
           transactionHash = hash;
+
+          if (error) {
+            // if an error has already been handled
+            // then ignore
+            return;
+          }
+
           this._invokeSubscription.pushExpectedTransaction(fromAddress, {
             transactionHash: hash,
             toAddress: address,
@@ -365,10 +373,11 @@ class Oasis {
         })
         .then(receipt => resolvableEmitter.emit('receipt', receipt))
         .catch(err => {
-          promise.resolver.reject(err);
+          error = err;
           if (transactionHash) {
             this._invokeSubscription.removeExpectedTransaction(fromAddress, transactionHash);
           }
+          promise.resolver.reject(err);
         });
 
       return resolvableEmitter;
