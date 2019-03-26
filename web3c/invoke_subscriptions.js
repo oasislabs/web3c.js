@@ -102,17 +102,45 @@ class InvokeSubscriptions {
     }
   }
 
-  removeExpectedTransaction(fromAddress, transactionHash) {
+  removeExpectedTransaction(fromAddress, transactionHash, err) {
+    err = err || new Error('subscription timed out');
     const subscription = this.subscriptions[fromAddress];
     if (!subscription) {
       return;
     }
 
+    const expectedTransaction = subscription.expectedTransactions[transactionHash];
+    if (!expectedTransaction) {
+      return;
+    }
+
     delete subscription.expectedTransactions[transactionHash];
+    expectedTransaction.promise.resolver.reject(err);
+    if (expectedTransaction.timeout) {
+      clearTimeout(expectedTransaction.timeout);
+      expectedTransaction.timeout = null;
+    }
+  }
+
+  removeReceivedTransaction(fromAddress, transactionHash) {
+    const subscription = this.subscriptions[fromAddress];
+    if (!subscription) {
+      return;
+    }
+
+    const receivedTransaction = subscription.receivedTransactions[transactionHash];
+    if (!receivedTransaction) {
+      return;
+    }
+
+    delete subscription.receivedTransactions[transactionHash];
+    if (receivedTransaction.timeout) {
+      clearTimeout(receivedTransaction.timeout);
+      receivedTransaction.timeout = null;
+    }
   }
 
   pushExpectedTransaction(fromAddress, expectedTransaction) {
-
     const subscription = this.getSubscription(fromAddress);
     const hash = expectedTransaction.transactionHash;
     const toAddress = expectedTransaction.toAddress;
@@ -123,10 +151,7 @@ class InvokeSubscriptions {
       // in the case that we have already received the transaction
       // we can resolve the promise here and now
       const data = subscription.receivedTransactions[hash];
-      clearTimeout(data.timeout);
-      data.timeout = null;
-
-      delete subscription.receivedTransactions[hash];
+      this.removeReceivedTransaction(fromAddress, hash);
       this.forwardData(data, toAddress, promise);
       return promise;
     }
@@ -143,8 +168,7 @@ class InvokeSubscriptions {
     };
 
     subscription.expectedTransactions[hash].timeout = setTimeout(() => {
-      promise.resolver.reject(new Error('subscription timed out'));
-      delete subscription.expectedTransactions[hash];
+      this.removeExpectedTransaction(fromAddress, hash);
       this.removeIfInactive(fromAddress);
     }, this.inactiveSubscriptionTimeout);
 
@@ -157,19 +181,19 @@ class InvokeSubscriptions {
       return;
     }
 
+    const promiseErr = new Error(
+      'expected transaction ' +
+      'could not be satisfied because subscription failed' +
+      'with error' + err);
+
+    Object.keys(subscription.expectedTransactions).forEach(key =>
+      this.removeExpectedTransaction(fromAddress, key, promiseErr));
+
+    Object.keys(subscription.expectedTransactions).forEach(key =>
+      this.removeReceivedTransaction(fromAddress, key));
+
     // delete subscription from main subscriptions dictionary
     delete this.subscriptions[fromAddress];
-
-    // complete all pending promises with the appropriate error
-    // since we may not be able to satisfy them
-    Object.keys(subscription.expectedTransactions).forEach(key => {
-      const expectedTransaction = subscription.expectedTransactions[key];
-      delete subscription.expectedTransactions[key];
-      const promiseErr = new Error('expected transaction ' +
-       'could not be satisfied because subscription failed' +
-       'with error' + err);
-      expectedTransaction.promise.resolver.reject(promiseErr);
-    });
   }
 
   handleError(fromAddress, err) {
@@ -207,9 +231,7 @@ class InvokeSubscriptions {
 
     if (subscription.expectedTransactions[data.transactionHash]) {
       const expectedTransaction = subscription.expectedTransactions[data.transactionHash];
-      delete subscription.expectedTransactions[data.transactionHash];
-      clearTimeout(expectedTransaction.timeout);
-      expectedTransaction.timeout = null;
+      this.removeReceivedTransaction(fromAddress, data.transactionHash);
       this.forwardData(data, expectedTransaction.toAddress, expectedTransaction.promise);
 
     } else {
@@ -220,7 +242,7 @@ class InvokeSubscriptions {
       };
 
       subscription.receivedTransactions[data.transactionHash].timeout = setTimeout(() => {
-        delete subscription.expectedTransactions[data.transactionHash];
+        this.removeReceivedTransaction(fromAddress, data.transactionHash);
         this.removeIfInactive(fromAddress);
       }, this.inactiveSubscriptionTimeout);
     }
