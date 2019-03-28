@@ -120,6 +120,8 @@ class InvokeSubscriptions {
       clearTimeout(expectedTransaction.timeout);
       expectedTransaction.timeout = null;
     }
+
+    this.removeIfInactive(fromAddress);
   }
 
   removeReceivedTransaction(fromAddress, transactionHash) {
@@ -138,6 +140,8 @@ class InvokeSubscriptions {
       clearTimeout(receivedTransaction.timeout);
       receivedTransaction.timeout = null;
     }
+
+    this.removeIfInactive(fromAddress);
   }
 
   pushExpectedTransaction(fromAddress, expectedTransaction) {
@@ -167,10 +171,9 @@ class InvokeSubscriptions {
       timeout: null
     };
 
-    subscription.expectedTransactions[hash].timeout = setTimeout(() => {
-      this.removeExpectedTransaction(fromAddress, hash);
-      this.removeIfInactive(fromAddress);
-    }, this.inactiveSubscriptionTimeout);
+    subscription.expectedTransactions[hash].timeout = setTimeout(() =>
+      this.removeExpectedTransaction(fromAddress, hash),
+    this.inactiveSubscriptionTimeout);
 
     return promise;
   }
@@ -241,10 +244,9 @@ class InvokeSubscriptions {
         timeout: null
       };
 
-      subscription.receivedTransactions[data.transactionHash].timeout = setTimeout(() => {
-        this.removeReceivedTransaction(fromAddress, data.transactionHash);
-        this.removeIfInactive(fromAddress);
-      }, this.inactiveSubscriptionTimeout);
+      subscription.receivedTransactions[data.transactionHash].timeout = setTimeout(() =>
+        this.removeReceivedTransaction(fromAddress, data.transactionHash),
+      this.inactiveSubscriptionTimeout);
     }
   }
 }
