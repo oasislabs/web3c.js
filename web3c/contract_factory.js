@@ -65,8 +65,29 @@ function makeContractFactory(options, providerFn) {
       // Configure the provider to be confidential (or not) based upon the contract's deploy header.
       this._requestManager.provider.backend = Promise.resolve(this._requestManager.provider.getBackend(deployOptions.header));
 
-      // Create the txObject that we want to patch and return.
-      const txObject = c.deploy.call(this, deployOptions, callback);
+      const promise = utils.createResolvablePromise();
+
+      // Create the txObject that we want to patch and return. If an error
+      // occurs txObject will be null
+      const txObject = c.deploy.call(this, deployOptions, function (err, res) {
+        if (err) {
+          promise.resolver.reject(err);
+        }
+        if (callback) {
+          callback(err, res);
+        }
+      });
+
+      // if txObject has not been created it means that an error has occurred. In this
+      // case we return the promise and assume that the deploy callback will be called
+      // with an appropriate error that we can set
+      if (!txObject) {
+        return {
+          send: () => promise,
+          estimateGas: () => promise
+        };
+      }
+
       // Methods we want to hook into.
       const _send = txObject.send;
       const _estimateGas = txObject.estimateGas;
