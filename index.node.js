@@ -1,19 +1,22 @@
 // Web3c
-const web3 = require('web3');
+const Web3 = require('web3');
 const Oasis = require('./web3c/oasis');
+const utils = require('./web3c/utils');
 /**
  * Web3c is a wrapper that can be invoked in the same way as Web3.
  * Expects Web3 v1.0
  */
-module.exports = function (provider, web3Override, options) {
-  if (web3Override) {
-    web3Override.call(this, provider);
-  } else {
-    web3.call(this, provider);
-  }
+class Web3c {
+  constructor (provider, Web3Override, options) {
+    if (Web3Override) {
+      Web3Override.call(this, provider);
+    } else {
+      Web3.call(this, provider);
+    }
 
-  this.oasis = new Oasis(buildOptions(this, options));
-};
+    this.oasis = new Oasis(buildOptions(this, options));
+  }
+}
 
 /**
  * Builds the Oasis options.
@@ -36,3 +39,7 @@ function buildOptions(web3, options) {
 
   return options;
 }
+
+utils.web3CopyMethods(Web3c, Web3);
+
+module.exports = Web3c;
