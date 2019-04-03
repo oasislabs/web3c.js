@@ -15,8 +15,8 @@ function objectAssign(a, b, enumerable = true, writable = false) {
 }
 
 /**
- * creates a promsie that can be resolved synchronously outside
- * the scope of the promise
+ * Creates a promsie that can be resolved synchronously outside
+ * the scope of the promise.
  */
 function createResolvablePromise() {
   const resolver = {};
@@ -29,15 +29,15 @@ function createResolvablePromise() {
 }
 
 /**
- * creates an event emitter that also acts as a promise
- * to return a value for an asynchronous operation
+ * Creates an event emitter that also acts as a promise
+ * to return a value for an asynchronous operation.
  */
 function createResolvableEmitter() {
   return resolvableEmitterFromPromise(createResolvablePromise());
 }
 
 /**
- * creates a resolvableEmitter from a promise
+ * Creates a resolvableEmitter from a promise.
  */
 function resolvableEmitterFromPromise(promise) {
   Emitter(promise);
@@ -45,9 +45,9 @@ function resolvableEmitterFromPromise(promise) {
 }
 
 /**
- * returns true if the result is an empty object
- * false otherwise. It will throw an error if the
- * argument is not an object, null or undefined
+ * @returns true if the result is an empty object
+ *          false otherwise. It will throw an error if the
+ *          argument is not an object, null or undefined
  */
 function isEmptyObject(o) {
   if (o === null || o === undefined) {
@@ -68,12 +68,20 @@ function isEmptyObject(o) {
 }
 
 /**
- * returns false if the result is an empty object
- * true otherwise. It will throw an error if the
- * argument is not an object, null or undefined
+ * @returns false if the result is an empty object
+ *          true otherwise. It will throw an error if the
+ *          argument is not an object, null or undefined.
  */
 function isNotEmptyObject(o) {
   return !isEmptyObject(o);
+}
+
+/**
+ * Copies class methods from the given Web3 object to the Web3c object.
+ */
+function web3CopyMethods(Web3c, Web3) {
+  Web3c.providers = Web3.providers;
+  Web3c.utils = Web3.utils;
 }
 
 module.exports = {
@@ -82,5 +90,6 @@ module.exports = {
   createResolvableEmitter,
   resolvableEmitterFromPromise,
   isEmptyObject,
-  isNotEmptyObject
+  isNotEmptyObject,
+  web3CopyMethods
 };
