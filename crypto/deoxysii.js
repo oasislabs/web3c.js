@@ -1,5 +1,4 @@
 const nacl = require('tweetnacl');
-const sha512_256 = require('js-sha512').sha512_256;
 const deoxys = require('deoxysii');
 
 const boxKDFTweak_str = 'MRAE_Box_Deoxys-II-256-128';
@@ -13,9 +12,9 @@ for (var i = 0; i < boxKDFTweak_str.length; i++) {
 function ECDHAndTweak(PublicKey, PrivateKey) {
     let PreMasterKey = nacl.scalarMult(PrivateKey, PublicKey);
 
-    let hash = sha512_256.hmac.create(boxKDFTweak);
+    let hash = require('crypto').createHmac('sha256', boxKDFTweak);
     hash.update(PreMasterKey);
-    return new Uint8Array(hash.arrayBuffer());
+    return new Uint8Array(hash.digest());
 }
 
 module.exports = {
