@@ -1,3 +1,7 @@
+# WARNING
+
+web3c.js is deprecated. For the latest, please see https://github.com/oasislabs/oasis.js.
+
 # web3c.js
 [![CircleCI](https://circleci.com/gh/oasislabs/web3c.js.svg?style=svg&circle-token=945fafdbfe2abf2c7b83b728a9db0eb8725edd53)](https://circleci.com/gh/oasislabs/web3c.js)[![Coverage Status](https://coveralls.io/repos/github/oasislabs/web3c.js/badge.svg?t=Q8lw6G)](https://coveralls.io/github/oasislabs/web3c.js)
 A Web3 extension for confidential transactions.
