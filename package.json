@@ -5,6 +5,7 @@
   "main": "index.node.js",
   "module": "index.browser.js",
   "scripts": {
+    "preinstall": "rm -rf node_modules/web3-providers-ws/node_modules/websocket",
     "build": "webpack-command --entry ./index.browser.js --output output/web3c.js",
     "prepublishOnly": "rm -r output/* && webpack-command --entry ./index.browser.js --output output/web3c.js",
     "watch": "webpack-command --watch --entry ./index.browser.js --output output/web3c.js",
