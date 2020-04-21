@@ -1,0 +1,9 @@
+_extends: private-global-settings
+
+
+
+collaborators:
+  # willscott is the owner of this repository
+  - username: willscott
+    permission: admin
+  
